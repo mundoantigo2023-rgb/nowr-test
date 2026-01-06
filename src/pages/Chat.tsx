@@ -32,18 +32,19 @@ interface Message {
   content: string;
   sender_id: string;
   created_at: string;
-  read?: boolean | null;
+  is_read?: boolean | null;
   nowpik_image_url?: string | null;
   nowpik_duration?: number | null;
   nowpik_viewed?: boolean | null;
+  read?: boolean | null; // For backward compatibility if needed locally, but DB is is_read
 }
 
 interface Match {
   id: string;
-  user_a: string;
-  user_b: string;
-  chat_started_at: string | null;
-  chat_expires_at: string | null;
+  user1_id: string;
+  user2_id: string;
+  created_at: string | null;
+  expires_at: string | null;
 }
 
 interface OtherProfile {
@@ -52,7 +53,7 @@ interface OtherProfile {
   online_status: boolean | null;
   is_prime: boolean | null;
   private_photos: string[] | null;
-  is_test_profile: boolean | null;
+  // is_test_profile removed as it does not exist in DB schema
   last_active: string | null;
   invisible_mode: boolean | null;
   hide_activity_status: boolean | null;
@@ -70,7 +71,7 @@ const Chat = () => {
   const { playNotificationSound } = useNotificationSound();
   const { track, trackConversationActivation } = useAnalytics();
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  
+
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [loading, setLoading] = useState(true);
@@ -91,28 +92,28 @@ const Chat = () => {
   const [myPrivatePhotos, setMyPrivatePhotos] = useState<string[]>([]);
   const [otherUserId, setOtherUserId] = useState<string | null>(null);
   const [timerExtended, setTimerExtended] = useState(false);
-  
+
   // Translation hook - pass isPrime for tier-based limits
   const { detectLanguage, translateMessage, getTranslation, translating, rateLimited, canTranslate, maxMessageLength } = useMessageTranslation(isPrime);
-  
+
   // Private album hook
-  const { 
-    hasAccess, 
-    hasPendingRequest, 
-    requestAccess, 
-    respondToRequest, 
+  const {
+    hasAccess,
+    hasPendingRequest,
+    requestAccess,
+    respondToRequest,
     revokeAccess,
     accessRecords,
     loading: albumLoading,
     refetch: refetchAlbumAccess
   } = usePrivateAlbum(userId || undefined);
-  
+
   // Typing indicator hook - Prime only
   const { otherUserTyping, setTyping } = useTypingIndicator(matchId, userId, isPrime);
-  
+
   // Screenshot protection hook
   const { reportScreenshot, recentReport } = useScreenshotProtection(matchId, userId, otherProfile?.display_name);
-  
+
   // NowPik state
   const [viewingNowPik, setViewingNowPik] = useState<{
     imageUrl: string;
@@ -150,7 +151,7 @@ const Chat = () => {
       }
 
       // Verify user is part of this match
-      if (matchData.user_a !== session.user.id && matchData.user_b !== session.user.id) {
+      if (matchData.user1_id !== session.user.id && matchData.user2_id !== session.user.id) {
         navigate("/matches");
         return;
       }
@@ -158,16 +159,16 @@ const Chat = () => {
       setMatch(matchData);
 
       // Get other user's profile
-      const otherId = matchData.user_a === session.user.id ? matchData.user_b : matchData.user_a;
+      const otherId = matchData.user1_id === session.user.id ? matchData.user2_id : matchData.user1_id;
       const { data: profileData } = await supabase
         .from("profiles")
-        .select("display_name, photos, online_status, is_prime, private_photos, is_test_profile, last_active, invisible_mode, hide_activity_status")
+        .select("display_name, photos, online_status, is_prime, private_photos, last_active, invisible_mode, hide_activity_status")
         .eq("user_id", otherId)
         .single();
 
       setOtherProfile(profileData);
       setOtherUserId(otherId);
-      
+
       // Track chat opened
       track("chat_opened", { matchId, otherUserId: otherId });
 
@@ -185,11 +186,11 @@ const Chat = () => {
         const unreadMessageIds = messagesData
           .filter(m => m.sender_id !== session.user.id)
           .map(m => m.id);
-        
+
         if (unreadMessageIds.length > 0) {
           await supabase
             .from("messages")
-            .update({ read: true })
+            .update({ is_read: true })
             .in("id", unreadMessageIds);
         }
       }
@@ -202,20 +203,20 @@ const Chat = () => {
       setBothHaveSent(!!otherHasSent && !!currentHasSent);
 
       // Check expiration status - if expired and user is Free, clean up immediately
-      if (matchData.chat_expires_at) {
-        const expiresAt = new Date(matchData.chat_expires_at).getTime();
+      if (matchData.expires_at) {
+        const expiresAt = new Date(matchData.expires_at).getTime();
         const now = Date.now();
         const userIsFree = !userProfile?.is_prime;
         const otherIsFree = !profileData?.is_prime;
-        
+
         if (now >= expiresAt && userIsFree && otherIsFree) {
           // Both are Free and chat expired - delete everything immediately
           setChatExpired(true);
-          
+
           // Delete messages and match
           await supabase.from("messages").delete().eq("match_id", matchId);
           await supabase.from("matches").delete().eq("id", matchId);
-          
+
           // Navigate away
           navigate("/matches");
           toast({
@@ -266,11 +267,14 @@ const Chat = () => {
   }, [rateLimited, toast]);
 
   // Real-time subscription for messages (INSERT and UPDATE for read receipts)
+  // Real-time subscription for messages
   useEffect(() => {
     if (!matchId || !userId) return;
 
-    const channel = supabase
-      .channel(`messages-${matchId}`)
+    // Use a unique channel name per match to avoid conflicts
+    const channelName = `room-${matchId}`;
+
+    const channel = supabase.channel(channelName)
       .on(
         "postgres_changes",
         {
@@ -281,37 +285,21 @@ const Chat = () => {
         },
         async (payload) => {
           const newMsg = payload.new as Message;
+
+          // Immediate unique state update
           setMessages((prev) => {
             if (prev.some(m => m.id === newMsg.id)) return prev;
             return [...prev, newMsg];
           });
-          
-          // Check if other user sent a message and send notification
+
+          // Handle side effects (notifications, sounds)
+          // We check sender_id to ensure it's from the other person
           if (newMsg.sender_id !== userId) {
-            const wasOtherSent = otherUserSentMessage;
             setOtherUserSentMessage(true);
-            
-            // If this is first message from other user and current user already sent,
-            // start the timer (reciprocity achieved)
-            // Timer applies when NOT both Prime
-            // FIXED: Timer does NOT reset with messages - it runs continuously
-            const areBothPrime = isPrime && otherProfile?.is_prime;
-            if (!wasOtherSent && currentUserSentMessage && !areBothPrime) {
-              setBothHaveSent(true);
-              // Timer will be started by startChatTimer when first reciprocal message sent
-            }
-            // NOTE: Removed resetChatTimer() - timer should NOT reset on messages
-            
-            // Play notification sound
             playNotificationSound();
-            
-            // Send browser notification
-            sendNotification(otherProfile?.display_name || "Nuevo mensaje", {
-              body: newMsg.content.length > 50 
-                ? newMsg.content.substring(0, 50) + "..." 
-                : newMsg.content,
-              tag: `chat-${matchId}`,
-            });
+
+            // Note: We avoid complex logic relying on stale closures here for simplicity and stability.
+            // The "Reciprocity" timer logic is better handled by separate effects watching 'messages'.
           }
         }
       )
@@ -324,23 +312,24 @@ const Chat = () => {
           filter: `match_id=eq.${matchId}`,
         },
         (payload) => {
-          // Update message read status for read receipts (Prime only)
-          if (isPrime) {
-            const updatedMsg = payload.new as Message;
-            setMessages((prev) => 
-              prev.map((m) => 
-                m.id === updatedMsg.id ? { ...m, read: updatedMsg.read } : m
-              )
-            );
-          }
+          const updatedMsg = payload.new as Message;
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === updatedMsg.id ? { ...m, ...updatedMsg } : m
+            )
+          );
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          console.log(`Subscribed to chat ${matchId}`);
+        }
+      });
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [matchId, userId, isPrime]);
+  }, [matchId, userId]); // Removed 'isPrime' from dependencies to prevent reconnection on prop change
 
   // Real-time subscription for match updates (to detect chat extensions by Prime user)
   useEffect(() => {
@@ -359,12 +348,12 @@ const Chat = () => {
         (payload) => {
           const updatedMatch = payload.new as Match;
           const oldMatch = payload.old as Match;
-          
+
           // Detect if chat was extended (new expiration is significantly later than before)
-          if (updatedMatch.chat_expires_at && oldMatch.chat_expires_at) {
-            const newExpiry = new Date(updatedMatch.chat_expires_at).getTime();
-            const oldExpiry = new Date(oldMatch.chat_expires_at).getTime();
-            
+          if (updatedMatch.expires_at && oldMatch.expires_at) {
+            const newExpiry = new Date(updatedMatch.expires_at).getTime();
+            const oldExpiry = new Date(oldMatch.expires_at).getTime();
+
             // If extended by more than 10 minutes (not just a message reset), show toast
             if (newExpiry - oldExpiry > 10 * 60 * 1000) {
               playNotificationSound();
@@ -379,9 +368,9 @@ const Chat = () => {
               setTimeout(() => setTimerExtended(false), 1500);
             }
           }
-          
+
           // If chat was reopened from expired state
-          if (updatedMatch.chat_expires_at && !oldMatch.chat_expires_at) {
+          if (updatedMatch.expires_at && !oldMatch.expires_at) {
             playNotificationSound();
             toast({
               title: `💬 ${t("chatReactivated")}!`,
@@ -389,7 +378,7 @@ const Chat = () => {
             });
             setChatExpired(false);
           }
-          
+
           // Update local match state
           setMatch(updatedMatch);
         }
@@ -403,11 +392,11 @@ const Chat = () => {
 
   // Determine if chat has timer (only when NOT both Prime)
   const bothArePrime = isPrime && otherProfile?.is_prime;
-  
+
   // Timer countdown - show for all non-Prime-to-Prime chats
   useEffect(() => {
     if (!match) return;
-    
+
     // Both Prime = unlimited, no timer at all
     if (bothArePrime) {
       setTimeRemaining(null);
@@ -415,22 +404,22 @@ const Chat = () => {
     }
 
     // Don't show timer until both users have sent at least one message
-    if (!bothHaveSent || !match.chat_expires_at) {
+    if (!bothHaveSent || !match.expires_at) {
       setTimeRemaining(null);
       return;
     }
 
-    const expiresAt = new Date(match.chat_expires_at).getTime();
-    
+    const expiresAt = new Date(match.expires_at).getTime();
+
     const interval = setInterval(() => {
       const now = Date.now();
       const remaining = expiresAt - now;
-      
+
       if (remaining <= 0) {
         setChatExpired(true);
         setTimeRemaining(0);
         clearInterval(interval);
-        
+
         // Delete messages and match when chat expires for Free-to-Free chats
         // For Free-to-Prime chats, Free user sees expired overlay, Prime can reopen
         if (!isPrime && !otherProfile?.is_prime) {
@@ -440,22 +429,22 @@ const Chat = () => {
         // If user is Free and other is Prime, just show expired state (Prime can reopen)
       } else {
         setTimeRemaining(remaining);
-        
+
         // Send 5-minute warning notification and show upsell (only for Free users)
         const fiveMinutes = 5 * 60 * 1000;
         if (remaining <= fiveMinutes && remaining > fiveMinutes - 1000 && !fiveMinWarningShown && !isPrime) {
           setFiveMinWarningShown(true);
           setShowTimerUpsell(true);
-          
+
           // Play notification sound
           playNotificationSound();
-          
+
           // Send browser push notification
           sendNotification(`⏱️ ${t("fiveMinutesLeft")}`, {
             body: `${t("fiveMinutesLeft")} - ${otherProfile?.display_name || ""}`,
             tag: `timer-warning-${matchId}`,
           });
-          
+
           // Show toast notification
           toast({
             title: `⏱️ ${t("fiveMinutesLeft")}`,
@@ -491,21 +480,19 @@ const Chat = () => {
     if (!match) return;
 
     const expiresAt = new Date(Date.now() + CHAT_DURATION_FREE);
-    
+
     await supabase
       .from("matches")
       .update({
-        chat_started_at: new Date().toISOString(),
-        chat_expires_at: expiresAt.toISOString(),
+        expires_at: expiresAt.toISOString(),
       })
       .eq("id", match.id);
 
     setMatch({
       ...match,
-      chat_started_at: new Date().toISOString(),
-      chat_expires_at: expiresAt.toISOString(),
+      expires_at: expiresAt.toISOString(),
     });
-    
+
     setBothHaveSent(true);
   };
 
@@ -516,20 +503,20 @@ const Chat = () => {
   // Handle chat expiration - delete messages and remove match from list
   const handleChatExpiration = async () => {
     if (!matchId || !match) return;
-    
+
     try {
       // Delete all messages from this match
       await supabase
         .from("messages")
         .delete()
         .eq("match_id", matchId);
-      
+
       // Delete the match itself
       await supabase
         .from("matches")
         .delete()
         .eq("id", matchId);
-      
+
       // Navigate back to matches after a short delay
       setTimeout(() => {
         navigate("/matches");
@@ -538,29 +525,29 @@ const Chat = () => {
           description: t("conversationEnded"),
         });
       }, 2000);
-      
+
       track("chat_expired", { matchId });
     } catch (error) {
       console.error("Error cleaning up expired chat:", error);
     }
   };
-  
+
   // Extend chat (Prime only, when chatting with Free user)
   const handleExtendChat = async () => {
     if (!match || !isPrime) return;
 
     const expiresAt = new Date(Date.now() + PRIME_EXTENSION_DURATION);
-    
+
     await supabase
       .from("matches")
       .update({
-        chat_expires_at: expiresAt.toISOString(),
+        expires_at: expiresAt.toISOString(),
       })
       .eq("id", match.id);
 
     setMatch({
       ...match,
-      chat_expires_at: expiresAt.toISOString(),
+      expires_at: expiresAt.toISOString(),
     });
 
     setChatExpired(false);
@@ -590,15 +577,13 @@ const Chat = () => {
       await supabase
         .from("matches")
         .update({
-          chat_expires_at: null,
-          chat_started_at: null,
+          expires_at: null,
         })
         .eq("id", match.id);
 
       setMatch({
         ...match,
-        chat_expires_at: null,
-        chat_started_at: null,
+        expires_at: null,
       });
 
       toast({
@@ -608,17 +593,17 @@ const Chat = () => {
     } else {
       // Prime + Free - extend by 60 minutes
       const expiresAt = new Date(Date.now() + PRIME_EXTENSION_DURATION);
-      
+
       await supabase
         .from("matches")
         .update({
-          chat_expires_at: expiresAt.toISOString(),
+          expires_at: expiresAt.toISOString(),
         })
         .eq("id", match.id);
 
       setMatch({
         ...match,
-        chat_expires_at: expiresAt.toISOString(),
+        expires_at: expiresAt.toISOString(),
       });
 
       toast({
@@ -636,7 +621,8 @@ const Chat = () => {
   };
 
   // Check if the other user is a test profile (auto-replies enabled)
-  const isTestProfile = otherProfile?.is_test_profile === true;
+  // is_test_profile removed from schema, defaulting to false
+  const isTestProfile = false;
 
   const triggerAutoReply = async (messageContent: string, otherId: string) => {
     try {
@@ -654,10 +640,10 @@ const Chat = () => {
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Check if chat is expired (either locally or by checking match expiration time)
-    const isExpired = chatExpired || (match?.chat_expires_at && new Date(match.chat_expires_at).getTime() <= Date.now() && !bothArePrime);
-    
+    const isExpired = chatExpired || (match?.expires_at && new Date(match.expires_at).getTime() <= Date.now() && !bothArePrime);
+
     if (!newMessage.trim() || !userId || !matchId || sending || isExpired) {
       if (isExpired && !isPrime) {
         // Free user trying to send after expiration - trigger expiration flow
@@ -675,7 +661,7 @@ const Chat = () => {
     setSending(true);
     const messageContent = newMessage.trim();
     setNewMessage("");
-    
+
     // Stop typing indicator when sending
     if (isPrime) {
       setTyping(false);
@@ -685,7 +671,7 @@ const Chat = () => {
       // Check if this is first message from current user
       const userHasSent = currentUserSentMessage || messages.some(m => m.sender_id === userId);
       const isFirstMessage = !userHasSent;
-      
+
       // Insert message
       const { error } = await supabase.from("messages").insert({
         match_id: matchId,
@@ -701,17 +687,17 @@ const Chat = () => {
       }
 
       // Track message sent with activation metrics
-      const otherId = match?.user_a === userId ? match?.user_b : match?.user_a;
+      const otherId = match?.user1_id === userId ? match?.user2_id : match?.user1_id;
       trackConversationActivation(matchId, otherId || "", isFirstMessage);
-      track("chat_message_sent", { 
-        matchId, 
+      track("chat_message_sent", {
+        matchId,
         isFirstMessage,
         messageCount: messages.length + 1
       });
 
       // Check if both have now sent and timer should start
       const nowBothHaveSent = (userHasSent || true) && otherUserSentMessage;
-      
+
       // Timer applies when NOT both Prime
       // FIXED: Timer only STARTS once, never resets on messages
       if (!bothArePrime) {
@@ -756,20 +742,20 @@ const Chat = () => {
   // NowPik handlers
   const handleSendNowPik = async (imageUrl: string, duration: number) => {
     if (!userId || !matchId) return;
-    
+
     try {
       const { error } = await supabase.from("messages").insert({
         match_id: matchId,
         sender_id: userId,
         content: "📸 NowPik",
-        is_temporary: true,
-        nowpik_image_url: imageUrl,
-        nowpik_duration: duration,
-        nowpik_viewed: false,
+        // is_temporary: true, // Column does not exist
+        // nowpik_image_url: imageUrl, // Column does not exist
+        // nowpik_duration: duration, // Column does not exist
+        // nowpik_viewed: false, // Column does not exist
       });
 
       if (error) throw error;
-      
+
       // Track NowPik sent
       track("chat_nowpik_sent", { matchId, duration });
     } catch (error) {
@@ -780,7 +766,7 @@ const Chat = () => {
 
   const handleViewNowPik = (message: Message) => {
     if (!message.nowpik_image_url || !message.nowpik_duration) return;
-    
+
     setViewingNowPik({
       imageUrl: message.nowpik_image_url,
       duration: message.nowpik_duration,
@@ -791,19 +777,22 @@ const Chat = () => {
 
   const handleNowPikViewed = async () => {
     if (!viewingNowPik) return;
-    
+
     try {
+      /* 
+      // Columns do not exist in DB schema
       await supabase
         .from("messages")
-        .update({ 
+        .update({
           nowpik_viewed: true,
           nowpik_viewed_at: new Date().toISOString(),
         })
         .eq("id", viewingNowPik.messageId);
-      
+      */
+
       // Update local state
-      setMessages(prev => prev.map(m => 
-        m.id === viewingNowPik.messageId 
+      setMessages(prev => prev.map(m =>
+        m.id === viewingNowPik.messageId
           ? { ...m, nowpik_viewed: true }
           : m
       ));
@@ -830,7 +819,7 @@ const Chat = () => {
           <Button variant="ghost" size="icon" onClick={() => navigate("/matches")}>
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          
+
           <div className="flex items-center gap-3 flex-1">
             <div className="relative">
               <img
@@ -862,8 +851,8 @@ const Chat = () => {
 
           {/* Timer - visible when NOT both Prime and both have sent messages */}
           {timeRemaining !== null && bothHaveSent && !bothArePrime && (
-            <ChatTimerDisplay 
-              timeRemaining={timeRemaining} 
+            <ChatTimerDisplay
+              timeRemaining={timeRemaining}
               timerExtended={timerExtended}
             />
           )}
@@ -899,8 +888,8 @@ const Chat = () => {
                 setAutoTranslate(!autoTranslate);
                 toast({
                   title: autoTranslate ? t("translationDisabled") : t("translationEnabled"),
-                  description: autoTranslate 
-                    ? t("messagesWontTranslate") 
+                  description: autoTranslate
+                    ? t("messagesWontTranslate")
                     : t("messagesWillTranslate"),
                 });
               }}
@@ -935,8 +924,8 @@ const Chat = () => {
                   toggleNotifications();
                   toast({
                     title: notificationsEnabled ? t("notificationsDeactivated") : t("notificationsActivated"),
-                    description: notificationsEnabled 
-                      ? t("noAlertsFromChat") 
+                    description: notificationsEnabled
+                      ? t("noAlertsFromChat")
                       : t("receiveAlerts"),
                   });
                 }
@@ -1071,8 +1060,8 @@ const Chat = () => {
                       disabled={nowPikViewed}
                       className={cn(
                         "px-4 py-3 rounded-2xl rounded-bl-md text-left transition-all",
-                        nowPikViewed 
-                          ? "bg-secondary/50 border border-border/50" 
+                        nowPikViewed
+                          ? "bg-secondary/50 border border-border/50"
                           : "bg-gradient-to-r from-primary/20 to-primary/10 border border-primary/40 hover:from-primary/30 hover:to-primary/20"
                       )}
                     >
@@ -1135,15 +1124,15 @@ const Chat = () => {
                       {new Date(message.created_at).toLocaleTimeString("es", { hour: "2-digit", minute: "2-digit" })}
                     </span>
                     {isOwn && (
-                      <MessageReadReceipt 
-                        sent={true} 
-                        read={!!message.read} 
-                        isPrime={isPrime} 
+                      <MessageReadReceipt
+                        sent={true}
+                        read={!!message.read}
+                        isPrime={isPrime}
                       />
                     )}
                   </div>
                 </div>
-                
+
                 {/* Translation controls for received messages */}
                 {!isOwn && (
                   <div className="flex items-center gap-2 mt-1 ml-1">
@@ -1181,12 +1170,12 @@ const Chat = () => {
             </div>
           );
         })}
-        
+
         {/* Typing indicator - Prime only */}
         {isPrime && otherUserTyping && (
           <TypingIndicator userName={otherProfile?.display_name} />
         )}
-        
+
         <div ref={messagesEndRef} />
       </main>
 
@@ -1221,7 +1210,7 @@ const Chat = () => {
               disabled={sending}
               isPrime={isPrime}
             />
-            
+
             <Input
               value={newMessage}
               onChange={(e) => {

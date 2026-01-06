@@ -101,7 +101,11 @@ export const useInfiniteProfiles = (userId: string | undefined, searchPreference
       if (reset) {
         setProfiles(data);
       } else {
-        setProfiles(prev => [...prev, ...data]);
+        setProfiles(prev => {
+          // Filter out duplicates
+          const newUnique = data.filter(p => !prev.some(existing => existing.user_id === p.user_id));
+          return [...prev, ...newUnique];
+        });
       }
 
       setHasMore(data.length === PAGE_SIZE);

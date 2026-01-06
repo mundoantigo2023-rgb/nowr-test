@@ -43,9 +43,9 @@ const calculateDistance = (
   const a =
     Math.sin(dLat / 2) * Math.sin(dLat / 2) +
     Math.cos((lat1 * Math.PI) / 180) *
-      Math.cos((lat2 * Math.PI) / 180) *
-      Math.sin(dLng / 2) *
-      Math.sin(dLng / 2);
+    Math.cos((lat2 * Math.PI) / 180) *
+    Math.sin(dLng / 2) *
+    Math.sin(dLng / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return R * c;
 };
@@ -75,7 +75,7 @@ const getDistanceColor = (km: number): { bg: string; text: string; icon: string 
 const ProfileCard = ({ profile, onClick, compact = false, userLocation, isHighlighted = false, highlightType, viewerIsPrime = false }: ProfileCardProps) => {
   const [isHovered, setIsHovered] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
-  
+
   // Hide online status for users in invisible mode (Prime feature)
   const isInvisible = profile.is_prime && profile.invisible_mode;
   const isOnline = isInvisible ? false : profile.online_status;
@@ -89,7 +89,7 @@ const ProfileCard = ({ profile, onClick, compact = false, userLocation, isHighli
   let distance: string | null = null;
   let distanceKm: number | null = null;
   let distanceColors: { bg: string; text: string; icon: string } | null = null;
-  
+
   if (userLocation && profile.latitude && profile.longitude) {
     distanceKm = calculateDistance(
       userLocation.lat,
@@ -124,7 +124,7 @@ const ProfileCard = ({ profile, onClick, compact = false, userLocation, isHighli
       {!imageLoaded && (
         <div className="absolute inset-0 bg-secondary animate-pulse rounded-lg" />
       )}
-      
+
       {/* Photo with scale effect */}
       <div className="absolute inset-0 overflow-hidden rounded-lg">
         <img
@@ -141,11 +141,11 @@ const ProfileCard = ({ profile, onClick, compact = false, userLocation, isHighli
       </div>
 
       {/* Gradient overlay - improved for legibility */}
-      <div 
+      <div
         className={cn(
           "absolute inset-0 rounded-lg transition-opacity duration-300",
           "bg-gradient-to-t from-black/85 via-black/30 to-transparent"
-        )} 
+        )}
       />
 
       {/* Top indicators */}
@@ -190,7 +190,7 @@ const ProfileCard = ({ profile, onClick, compact = false, userLocation, isHighli
             {profile.intention_tags.slice(0, 2).map((tagId) => {
               const option = INTEREST_OPTIONS.find(o => o.id === tagId);
               return option ? (
-                <span 
+                <span
                   key={tagId}
                   className="text-[8px] bg-white/20 backdrop-blur-sm text-white px-1.5 py-0.5 rounded-full"
                 >
@@ -205,7 +205,7 @@ const ProfileCard = ({ profile, onClick, compact = false, userLocation, isHighli
             )}
           </div>
         )}
-        
+
         {/* Presence indicator - above name */}
         {!isInvisible && !hideActivityStatus && (
           <div className="mb-0.5">
@@ -220,39 +220,39 @@ const ProfileCard = ({ profile, onClick, compact = false, userLocation, isHighli
             />
           </div>
         )}
-        
-        {/* Name, age, and distance row */}
-        <div className="flex items-center justify-between gap-1">
-          <div className="flex items-baseline gap-1 min-w-0 flex-1">
+
+        {/* Name, age, and distance row - Mobile Optimized */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-0.5 sm:gap-1">
+          <div className="flex items-baseline gap-1.5 min-w-0 pr-2">
             <span className={cn(
               "font-semibold text-white truncate drop-shadow-md",
-              compact ? "text-xs" : "text-sm"
+              compact ? "text-xs" : "text-sm sm:text-base"
             )}>
               {profile.display_name}
             </span>
             <span className={cn(
-              "text-white/85 font-medium drop-shadow-md shrink-0",
-              compact ? "text-[10px]" : "text-xs"
+              "text-white/90 font-medium drop-shadow-md shrink-0 opacity-90",
+              compact ? "text-[10px]" : "text-xs sm:text-sm"
             )}>
               {profile.age}
             </span>
           </div>
-          
-          {/* Distance badge with color coding */}
+
+          {/* Distance badge - cleaner on mobile */}
           {distance && distanceColors && (
             <div className={cn(
-              "flex items-center gap-0.5 backdrop-blur-sm px-1.5 py-0.5 rounded-full shrink-0",
+              "flex items-center gap-1 backdrop-blur-sm px-1.5 py-0.5 rounded-full w-fit mt-0.5 sm:mt-0",
               distanceColors.bg
             )}>
-              <MapPin className={cn("w-2.5 h-2.5", distanceColors.icon)} />
-              <span className={cn("text-[10px] font-medium", distanceColors.text)}>{distance}</span>
+              <MapPin className={cn("w-2 h-2 sm:w-2.5 sm:h-2.5", distanceColors.icon)} />
+              <span className={cn("text-[9px] sm:text-[10px] font-medium leading-none", distanceColors.text)}>{distance}</span>
             </div>
           )}
         </div>
       </div>
 
       {/* Hover overlay */}
-      <div 
+      <div
         className={cn(
           "absolute inset-0 rounded-lg border-2 transition-all duration-200 pointer-events-none",
           isHovered ? "border-primary/60 bg-primary/5" : "border-transparent"
