@@ -87,7 +87,7 @@ const PrivateAlbumManager = ({ userId, privatePhotos, onPhotosChange }: PrivateA
 
       if (uploadedUrls.length > 0) {
         const newPhotos = [...privatePhotos, ...uploadedUrls];
-        
+
         // Update profile in database
         const { error: updateError } = await supabase
           .from("profiles")
@@ -129,7 +129,7 @@ const PrivateAlbumManager = ({ userId, privatePhotos, onPhotosChange }: PrivateA
 
     try {
       const photoUrl = privatePhotos[index];
-      
+
       // Extract file path from URL
       const urlParts = photoUrl.split("/private-albums/");
       if (urlParts.length > 1) {
@@ -138,7 +138,7 @@ const PrivateAlbumManager = ({ userId, privatePhotos, onPhotosChange }: PrivateA
       }
 
       const newPhotos = privatePhotos.filter((_, i) => i !== index);
-      
+
       const { error } = await supabase
         .from("profiles")
         .update({ private_photos: newPhotos })
@@ -243,30 +243,7 @@ const PrivateAlbumManager = ({ userId, privatePhotos, onPhotosChange }: PrivateA
           )}
         </div>
 
-        {/* Empty state */}
-        {privatePhotos.length === 0 && (
-          <div className="text-center py-6">
-            <div className="w-16 h-16 rounded-full bg-secondary/50 flex items-center justify-center mx-auto mb-3">
-              <ImageIcon className="w-8 h-8 text-muted-foreground" />
-            </div>
-            <p className="text-sm text-muted-foreground mb-4">
-              Tu álbum privado está vacío
-            </p>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={uploading}
-            >
-              {uploading ? (
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              ) : (
-                <Upload className="w-4 h-4 mr-2" />
-              )}
-              Subir fotos
-            </Button>
-          </div>
-        )}
+
 
         {/* Hidden file input */}
         <input
