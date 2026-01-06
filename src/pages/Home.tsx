@@ -258,7 +258,16 @@ const Home = () => {
 
           {/* Right: Actions */}
           <div className="flex items-center gap-3">
-            {/* Search Icon (Placeholder for now, could act as expanded filter toggle) */}
+            {/* Refresh Button */}
+            <button
+              onClick={refresh}
+              className="p-2 rounded-full hover:bg-secondary/50 transition-colors active:scale-95"
+              aria-label="Refresh feed"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"></path><path d="M16 16h5v5"></path></svg>
+            </button>
+
+            {/* Search Icon (Placeholder) */}
             <button className="p-2 rounded-full hover:bg-secondary/50 transition-colors">
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg>
             </button>

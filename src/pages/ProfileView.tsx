@@ -426,7 +426,7 @@ const ProfileView = () => {
 
         <div className="px-4 max-w-md mx-auto relative">
           {/* PROFILE PHOTO - 4:5 Ratio, Centered */}
-          <div className="relative w-full aspect-[4/5] max-h-[55vh] mx-auto rounded-3xl overflow-hidden shadow-sm bg-secondary/30 touch-none">
+          <div className="relative w-full aspect-[4/5] max-h-[55vh] mx-auto rounded-3xl overflow-hidden shadow-sm bg-secondary/30 touch-pan-y">
             {/* Photo Carousel */}
             <img
               src={photos[currentPhoto]}
