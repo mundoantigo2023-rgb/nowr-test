@@ -149,26 +149,41 @@ const ProfileCard = ({ profile, onClick, compact = false, userLocation, isHighli
       />
 
       {/* Top indicators */}
-      <div className="absolute top-1.5 left-1.5 right-1.5 flex items-center justify-between">
-        {/* Left: Highlight label */}
-        <div className="flex items-center gap-1">
+      <div className="absolute top-2 left-2 right-2 flex items-start justify-between">
+        {/* Left: Presence / Status Badge - MOVED TO TOP */}
+        <div className="flex flex-col gap-1 items-start">
+          {!isInvisible && !hideActivityStatus && (
+            <div className="bg-black/40 backdrop-blur-md rounded-full px-2 py-1 flex items-center">
+              <PresenceIndicator
+                lastActive={profile.last_active || null}
+                isOnline={isOnline || false}
+                isPrime={viewerIsPrime}
+                hideActivityStatus={hideActivityStatus}
+                isInvisible={isInvisible || false}
+                variant="text"
+                size="sm"
+              />
+            </div>
+          )}
+
+          {/* Highlight label below status if needed */}
           {isHighlighted && !isNowPick && (
-            <span className="text-[8px] font-medium text-primary-foreground bg-primary/80 backdrop-blur-sm px-1.5 py-0.5 rounded-full explore-highlight-label">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-white bg-primary/90 px-2 py-0.5 rounded-sm shadow-sm explore-highlight-label">
               {getHighlightLabel()}
             </span>
           )}
         </div>
 
         {/* Right indicators: Prime + Private album */}
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1.5">
           {hasPrivateAlbum && (
-            <div className="p-1 bg-black/40 backdrop-blur-sm rounded-full" title="Álbum privado">
-              <Lock className="w-2.5 h-2.5 text-white/80" />
+            <div className="p-1.5 bg-black/40 backdrop-blur-md rounded-full" title="Álbum privado">
+              <Lock className="w-3 h-3 text-white/90" />
             </div>
           )}
           {isPrime && (
-            <div className="p-1 bg-prime/30 backdrop-blur-sm rounded-full ring-1 ring-prime/50">
-              <Crown className="w-2.5 h-2.5 text-prime animate-prime-shimmer" />
+            <div className="p-1.5 bg-prime/80 backdrop-blur-md rounded-full shadow-lg border border-white/20">
+              <Crown className="w-3 h-3 text-white animate-prime-shimmer" />
             </div>
           )}
         </div>
@@ -176,79 +191,53 @@ const ProfileCard = ({ profile, onClick, compact = false, userLocation, isHighli
 
       {/* NowPick Boost indicator - centered at top with enhanced styling */}
       {isNowPick && (
-        <div className="absolute top-1.5 left-1/2 -translate-x-1/2 bg-gradient-to-r from-primary to-primary/80 px-2.5 py-0.5 rounded-full shadow-lg flex items-center gap-1.5 border border-primary-foreground/20">
-          <Zap className="w-3 h-3 text-primary-foreground animate-pulse" />
-          <span className="text-[9px] font-bold text-primary-foreground tracking-wider uppercase">NowPick</span>
+        <div className="absolute top-2 left-1/2 -translate-x-1/2 bg-gradient-to-r from-primary to-primary/80 px-3 py-0.5 rounded-full shadow-xl flex items-center gap-1.5 border border-white/20 z-10">
+          <Zap className="w-3.5 h-3.5 text-white fill-white animate-pulse" />
+          <span className="text-[10px] font-black text-white tracking-widest uppercase drop-shadow-sm">NOWPICK</span>
         </div>
       )}
 
-      {/* Bottom info */}
-      <div className="absolute bottom-0 left-0 right-0 p-2 text-left">
-        {/* Interest tags */}
+      {/* Bottom info - Redesigned Hierarchy */}
+      <div className="absolute bottom-0 left-0 right-0 p-3 pt-12 text-left bg-gradient-to-t from-black/90 via-black/50 to-transparent">
+        {/* Interest tags floating above */}
         {profile.intention_tags && profile.intention_tags.length > 0 && !compact && (
-          <div className="flex flex-wrap gap-0.5 mb-1">
+          <div className="flex flex-wrap gap-1 mb-2">
             {profile.intention_tags.slice(0, 2).map((tagId) => {
               const option = INTEREST_OPTIONS.find(o => o.id === tagId);
               return option ? (
                 <span
                   key={tagId}
-                  className="text-[8px] bg-white/20 backdrop-blur-sm text-white px-1.5 py-0.5 rounded-full"
+                  className="text-[9px] font-medium bg-white/10 backdrop-blur-sm border border-white/10 text-white px-2 py-0.5 rounded-full"
                 >
                   {option.emoji} {option.label}
                 </span>
               ) : null;
             })}
-            {profile.intention_tags.length > 2 && (
-              <span className="text-[8px] bg-white/20 backdrop-blur-sm text-white px-1.5 py-0.5 rounded-full">
-                +{profile.intention_tags.length - 2}
-              </span>
-            )}
           </div>
         )}
 
-        {/* Presence indicator - above name */}
-        {!isInvisible && !hideActivityStatus && (
-          <div className="mb-0.5">
-            <PresenceIndicator
-              lastActive={profile.last_active || null}
-              isOnline={isOnline || false}
-              isPrime={viewerIsPrime}
-              hideActivityStatus={hideActivityStatus}
-              isInvisible={isInvisible || false}
-              variant="full"
-              size="sm"
-            />
-          </div>
-        )}
-
-        {/* Name, age, and distance row - Mobile Optimized */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-0.5 sm:gap-1">
-          <div className="flex items-baseline gap-1.5 min-w-0 pr-2">
-            <span className={cn(
-              "font-semibold text-white truncate drop-shadow-md",
-              compact ? "text-xs" : "text-sm sm:text-base"
-            )}>
-              {profile.display_name}
-            </span>
-            <span className={cn(
-              "text-white/90 font-medium drop-shadow-md shrink-0 opacity-90",
-              compact ? "text-[10px]" : "text-xs sm:text-sm"
-            )}>
-              {profile.age}
-            </span>
-          </div>
-
-          {/* Distance badge - cleaner on mobile */}
-          {distance && distanceColors && (
-            <div className={cn(
-              "flex items-center gap-1 backdrop-blur-sm px-1.5 py-0.5 rounded-full w-fit mt-0.5 sm:mt-0",
-              distanceColors.bg
-            )}>
-              <MapPin className={cn("w-2 h-2 sm:w-2.5 sm:h-2.5", distanceColors.icon)} />
-              <span className={cn("text-[9px] sm:text-[10px] font-medium leading-none", distanceColors.text)}>{distance}</span>
-            </div>
-          )}
+        {/* Primary: Name and Age */}
+        <div className="flex items-center gap-2 mb-0.5">
+          <h3 className={cn(
+            "font-bold text-white leading-none drop-shadow-lg",
+            compact ? "text-base" : "text-xl"
+          )}>
+            {profile.display_name}, <span className="font-medium opacity-95">{profile.age}</span>
+          </h3>
         </div>
+
+        {/* Secondary: Distance */}
+        {distance && (
+          <div className="flex items-center gap-1 text-white/70">
+            <MapPin className="w-3 h-3" />
+            <span className={cn(
+              "font-medium drop-shadow-md",
+              compact ? "text-[10px]" : "text-xs"
+            )}>
+              {compact ? distance : `A ${distance} de ti`}
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Hover overlay */}
