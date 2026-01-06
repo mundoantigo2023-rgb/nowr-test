@@ -30,6 +30,8 @@ export const useInfiniteProfiles = (userId: string | undefined, searchPreference
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const offsetRef = useRef(0);
+  const currentRequestId = useRef(0);
+  const processedIds = useRef(new Set<string>());
 
   // State to store last known location
   const [userLoc, setUserLoc] = useState<{ lat: number; lng: number } | null>(null);
@@ -47,9 +49,13 @@ export const useInfiniteProfiles = (userId: string | undefined, searchPreference
   const fetchProfiles = useCallback(async (reset = false) => {
     if (!userId) return;
 
+    const requestId = ++currentRequestId.current;
+
     if (reset) {
       offsetRef.current = 0;
       setHasMore(true);
+      // Don't clear profiles immediately to avoid flash, but we reset tracking
+      processedIds.current.clear();
     }
 
     try {
@@ -63,13 +69,13 @@ export const useInfiniteProfiles = (userId: string | undefined, searchPreference
           long: userLoc.lng,
           limit_count: PAGE_SIZE,
           offset_count: offsetRef.current,
-          filter_gender: searchPreference === "both" ? null : searchPreference,
+          filter_gender: searchPreference === "both" ? undefined : (searchPreference || undefined),
           ignore_user_id: userId
         });
 
         if (rpcData) {
           // RPC returns loose object, cast to Profile (dist_km is extra but fine)
-          data = rpcData.map(p => ({ ...p, online_status: p.online_status || false })) as unknown as Profile[];
+          data = rpcData.map((p: any) => ({ ...p, online_status: p.online_status || false })) as unknown as Profile[];
         }
         error = rpcError;
 
@@ -90,6 +96,8 @@ export const useInfiniteProfiles = (userId: string | undefined, searchPreference
         const { data: stdData, error: stdError } = await query
           .order("is_prime", { ascending: false, nullsFirst: false })
           .order("last_active", { ascending: false })
+          // Add deterministic sort key to prevent shifting rows
+          .order("user_id", { ascending: true })
           .range(offsetRef.current, offsetRef.current + PAGE_SIZE - 1);
 
         data = stdData || [];
@@ -98,12 +106,31 @@ export const useInfiniteProfiles = (userId: string | undefined, searchPreference
 
       if (error) throw error;
 
+      // Check if this is the latest request
+      if (requestId !== currentRequestId.current) return;
+
       if (reset) {
-        setProfiles(data);
+        // For reset, we replace everything
+        const uniqueData: Profile[] = [];
+        data.forEach(p => {
+          if (!processedIds.current.has(p.user_id)) {
+            processedIds.current.add(p.user_id);
+            uniqueData.push(p);
+          }
+        });
+        setProfiles(uniqueData);
       } else {
         setProfiles(prev => {
-          // Filter out duplicates
-          const newUnique = data.filter(p => !prev.some(existing => existing.user_id === p.user_id));
+          // Filter out duplicates from incoming batch against ALREADY rendered IDs
+          // We double check against 'prev' just in case ref was out of sync (rare)
+          const newUnique = data.filter(p => {
+            if (processedIds.current.has(p.user_id)) return false;
+            // Also check current state as fallback
+            if (prev.some(existing => existing.user_id === p.user_id)) return false;
+
+            processedIds.current.add(p.user_id);
+            return true;
+          });
           return [...prev, ...newUnique];
         });
       }
@@ -113,8 +140,10 @@ export const useInfiniteProfiles = (userId: string | undefined, searchPreference
     } catch (error) {
       console.error("Error fetching profiles:", error);
     } finally {
-      setLoading(false);
-      setLoadingMore(false);
+      if (requestId === currentRequestId.current) {
+        setLoading(false);
+        setLoadingMore(false);
+      }
     }
   }, [userId, searchPreference, userLoc]);
 
