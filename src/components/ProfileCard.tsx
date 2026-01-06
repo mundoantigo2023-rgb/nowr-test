@@ -28,6 +28,8 @@ interface ProfileCardProps {
   isHighlighted?: boolean;
   highlightType?: 'active' | 'featured';
   viewerIsPrime?: boolean; // Whether the viewer is Prime (can see exact times)
+  hideDistance?: boolean; // New prop to hide distance on grid
+  variant?: 'default' | 'forYou'; // Variant for different visual styles
 }
 
 // Calculate distance between two points using Haversine formula
@@ -58,21 +60,18 @@ const formatDistance = (km: number): string => {
   return `${km.toFixed(1)} km`;
 };
 
-// Get distance color based on proximity
+// Get distance color based on proximity (kept for consistency if needed later)
 const getDistanceColor = (km: number): { bg: string; text: string; icon: string } => {
   if (km < 2) {
-    // Close - Green
     return { bg: "bg-green-500/80", text: "text-white", icon: "text-white" };
   } else if (km <= 10) {
-    // Medium - Yellow/Amber
     return { bg: "bg-amber-500/80", text: "text-white", icon: "text-white" };
   } else {
-    // Far - Gray
     return { bg: "bg-black/50", text: "text-white/80", icon: "text-white/60" };
   }
 };
 
-const ProfileCard = ({ profile, onClick, compact = false, userLocation, isHighlighted = false, highlightType, viewerIsPrime = false }: ProfileCardProps) => {
+const ProfileCard = ({ profile, onClick, compact = false, userLocation, isHighlighted = false, highlightType, viewerIsPrime = false, hideDistance = false, variant = 'default' }: ProfileCardProps) => {
   const [isHovered, setIsHovered] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
 
@@ -88,7 +87,6 @@ const ProfileCard = ({ profile, onClick, compact = false, userLocation, isHighli
   // Calculate distance if both locations available
   let distance: string | null = null;
   let distanceKm: number | null = null;
-  let distanceColors: { bg: string; text: string; icon: string } | null = null;
 
   if (userLocation && profile.latitude && profile.longitude) {
     distanceKm = calculateDistance(
@@ -98,7 +96,6 @@ const ProfileCard = ({ profile, onClick, compact = false, userLocation, isHighli
       profile.longitude
     );
     distance = formatDistance(distanceKm);
-    distanceColors = getDistanceColor(distanceKm);
   }
 
   // Get highlight label text
@@ -114,10 +111,11 @@ const ProfileCard = ({ profile, onClick, compact = false, userLocation, isHighli
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       className={cn(
-        "profile-card relative w-full group focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1 focus:ring-offset-background rounded-lg",
-        compact ? "aspect-square" : "aspect-[4/5]",
+        "profile-card relative w-full group focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1 focus:ring-offset-background rounded-lg overflow-hidden",
+        compact ? "aspect-[4/5]" : "aspect-[4/5]", // Enforce 4:5 everywhere for consistency
         isNowPick && "ring-2 ring-primary nowpick-card-glow",
-        isHighlighted && "explore-highlight-glow"
+        variant === 'forYou' && "ring-2 ring-brand-gradient shadow-[0_0_15px_rgba(255,215,0,0.3)]", // Gold/Brand glow for For You
+        isHighlighted && variant !== 'forYou' && "explore-highlight-glow"
       )}
     >
       {/* Skeleton loader */}
@@ -140,42 +138,37 @@ const ProfileCard = ({ profile, onClick, compact = false, userLocation, isHighli
         />
       </div>
 
-      {/* Gradient overlay - improved for legibility */}
+      {/* Gradient overlay - darker at bottom for text legibility */}
       <div
         className={cn(
           "absolute inset-0 rounded-lg transition-opacity duration-300",
-          "bg-gradient-to-t from-black/85 via-black/30 to-transparent"
+          "bg-gradient-to-t from-black/90 via-black/20 to-transparent"
         )}
       />
 
-      {/* Top indicators */}
-      <div className="absolute top-2 left-2 right-2 flex items-start justify-between">
-        {/* Left: Presence / Status Badge - MOVED TO TOP */}
-        <div className="flex flex-col gap-1 items-start">
-          {!isInvisible && !hideActivityStatus && (
-            <div className="bg-black/40 backdrop-blur-md rounded-full px-2 py-1 flex items-center">
-              <PresenceIndicator
-                lastActive={profile.last_active || null}
-                isOnline={isOnline || false}
-                isPrime={viewerIsPrime}
-                hideActivityStatus={hideActivityStatus}
-                isInvisible={isInvisible || false}
-                variant="text"
-                size="sm"
-              />
-            </div>
-          )}
-
-          {/* Highlight label below status if needed */}
-          {isHighlighted && !isNowPick && (
-            <span className="text-[10px] font-bold uppercase tracking-wider text-white bg-primary/90 px-2 py-0.5 rounded-sm shadow-sm explore-highlight-label">
-              {getHighlightLabel()}
-            </span>
-          )}
+      {/* For You / Featured Badge */}
+      {variant === 'forYou' && (
+        <div className="absolute top-2 left-2 z-10">
+          <span className="bg-gradient-to-r from-amber-500 to-orange-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-lg border border-white/20 uppercase tracking-wide">
+            For You
+          </span>
         </div>
+      )}
 
-        {/* Right indicators: Prime + Private album */}
-        <div className="flex items-center gap-1.5">
+      {/* Top indicators */}
+      <div className="absolute top-2 right-2 flex items-start flex-col gap-1.5 z-10">
+        {/* Status Badge (Online) */}
+        {!isInvisible && !hideActivityStatus && isOnline && (
+          <div className="self-end" title="Online">
+            <span className="relative flex h-3 w-3">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500 border-2 border-green-700"></span>
+            </span>
+          </div>
+        )}
+
+        {/* Prime + Private album icons */}
+        <div className="flex items-center gap-1.5 self-end">
           {hasPrivateAlbum && (
             <div className="p-1.5 bg-black/40 backdrop-blur-md rounded-full" title="Álbum privado">
               <Lock className="w-3 h-3 text-white/90" />
@@ -189,54 +182,37 @@ const ProfileCard = ({ profile, onClick, compact = false, userLocation, isHighli
         </div>
       </div>
 
-      {/* NowPick Boost indicator - centered at top with enhanced styling */}
-      {isNowPick && (
-        <div className="absolute top-2 left-1/2 -translate-x-1/2 bg-gradient-to-r from-primary to-primary/80 px-3 py-0.5 rounded-full shadow-xl flex items-center gap-1.5 border border-white/20 z-10">
-          <Zap className="w-3.5 h-3.5 text-white fill-white animate-pulse" />
-          <span className="text-[10px] font-black text-white tracking-widest uppercase drop-shadow-sm">NOWPICK</span>
-        </div>
-      )}
-
-      {/* Bottom info - Redesigned Hierarchy */}
-      <div className="absolute bottom-0 left-0 right-0 p-3 pt-12 text-left bg-gradient-to-t from-black/90 via-black/50 to-transparent">
-        {/* Interest tags floating above */}
-        {profile.intention_tags && profile.intention_tags.length > 0 && !compact && (
-          <div className="flex flex-wrap gap-1 mb-2">
-            {profile.intention_tags.slice(0, 2).map((tagId) => {
-              const option = INTEREST_OPTIONS.find(o => o.id === tagId);
-              return option ? (
-                <span
-                  key={tagId}
-                  className="text-[9px] font-medium bg-white/10 backdrop-blur-sm border border-white/10 text-white px-2 py-0.5 rounded-full"
-                >
-                  {option.emoji} {option.label}
-                </span>
-              ) : null;
-            })}
-          </div>
-        )}
-
-        {/* Primary: Name and Age */}
-        <div className="flex items-center gap-2 mb-0.5">
+      {/* Bottom info - Clean Hierarchy (Name + Age only) */}
+      <div className="absolute bottom-0 left-0 right-0 p-3 text-left">
+        {/* Name and Age */}
+        <div className="flex items-end gap-1.5 mb-0.5 w-full">
           <h3 className={cn(
-            "font-bold text-white leading-none drop-shadow-lg",
-            compact ? "text-base" : "text-xl"
+            "font-bold text-white leading-tight drop-shadow-md truncate max-w-[80%]",
+            compact ? "text-sm" : "text-lg"
           )}>
-            {profile.display_name}, <span className="font-medium opacity-95">{profile.age}</span>
+            {profile.display_name}
           </h3>
+          <span className="font-normal text-white/90 text-sm mb-[1px]">{profile.age}</span>
         </div>
 
-        {/* Secondary: Distance */}
-        {distance && (
-          <div className="flex items-center gap-1 text-white/70">
+        {/* Distance - Conditionally Rendered */}
+        {!hideDistance && distance && (
+          <div className="flex items-center gap-1 text-white/70 mt-0.5">
             <MapPin className="w-3 h-3" />
             <span className={cn(
               "font-medium drop-shadow-md",
               compact ? "text-[10px]" : "text-xs"
             )}>
-              {compact ? distance : `A ${distance} de ti`}
+              {distance}
             </span>
           </div>
+        )}
+
+        {/* Highlight label for active users if NOT hiding distance (e.g. standard view) */}
+        {!hideDistance && isHighlighted && !isNowPick && variant !== 'forYou' && (
+          <span className="inline-block mt-1 text-[9px] font-bold uppercase tracking-wider text-white/90 bg-white/20 px-1.5 py-0.5 rounded-sm">
+            {getHighlightLabel()}
+          </span>
         )}
       </div>
 

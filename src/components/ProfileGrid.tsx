@@ -66,7 +66,7 @@ const ProfileGrid = ({ profiles, currentUserId, loadingMore, hasMore, onLoadMore
       const { data: blocks } = await supabase
         .from("blocks")
         .select("blocker_id, blocked_id")
-        .or(`blocker_id.eq.${currentUserId},blocked_id.eq.${currentUserId}`);
+        .or(`blocker_id.eq.${currentUserId},blocked_id.eq.${currentUserId}`) as { data: { blocker_id: string; blocked_id: string }[] | null };
 
       const blockedIds = new Set<string>();
       blocks?.forEach(block => {
@@ -77,20 +77,20 @@ const ProfileGrid = ({ profiles, currentUserId, loadingMore, hasMore, onLoadMore
       // Fetch report counts for all profiles
       const { data: reports } = await supabase
         .from("reports")
-        .select("reported_user_id")
-        .in("reported_user_id", profileIds);
+        .select("reported_id")
+        .in("reported_id", profileIds) as { data: { reported_id: string }[] | null };
 
       const reportCounts = new Map<string, number>();
       reports?.forEach(report => {
-        const count = reportCounts.get(report.reported_user_id) || 0;
-        reportCounts.set(report.reported_user_id, count + 1);
+        const count = reportCounts.get(report.reported_id) || 0;
+        reportCounts.set(report.reported_id, count + 1);
       });
 
       // Fetch block counts for all profiles (how many times they've been blocked)
       const { data: allBlocks } = await supabase
         .from("blocks")
         .select("blocked_id")
-        .in("blocked_id", profileIds);
+        .in("blocked_id", profileIds) as { data: { blocked_id: string }[] | null };
 
       const blockCounts = new Map<string, number>();
       allBlocks?.forEach(block => {
@@ -107,18 +107,18 @@ const ProfileGrid = ({ profiles, currentUserId, loadingMore, hasMore, onLoadMore
   // Calculate quality score for a profile (local calculation)
   const calculateLocalScore = (profile: Profile): number => {
     let score = 100;
-    
+
     const reportCount = moderationData.reportCounts.get(profile.user_id) || 0;
     const blockCount = moderationData.blockCounts.get(profile.user_id) || 0;
-    
+
     score -= reportCount * 10;
     score -= blockCount * 5;
-    
+
     // Bonus for profile completeness
     if (profile.photos && profile.photos.length > 0) score += 10;
     if (profile.short_description) score += 5;
     if (profile.intention_tags && profile.intention_tags.length > 0) score += 5;
-    
+
     return Math.max(0, Math.min(100, score));
   };
 
@@ -128,17 +128,17 @@ const ProfileGrid = ({ profiles, currentUserId, loadingMore, hasMore, onLoadMore
     if (profile.allow_highlight === false) {
       return { eligible: false, type: 'active' };
     }
-    
+
     const now = new Date();
     const isNowPick = profile.nowpick_active_until && new Date(profile.nowpick_active_until) > now;
     const isPrime = profile.is_prime;
     const isOnline = profile.online_status;
-    
+
     // NowPick or Prime users get "Destacado"
     if (isNowPick || isPrime) {
       return { eligible: true, type: 'featured' };
     }
-    
+
     // Online users with good engagement get "Activo ahora"
     if (isOnline) {
       const hasPhotos = profile.photos && profile.photos.length >= 2;
@@ -147,7 +147,7 @@ const ProfileGrid = ({ profiles, currentUserId, loadingMore, hasMore, onLoadMore
         return { eligible: true, type: 'active' };
       }
     }
-    
+
     return { eligible: false, type: 'active' };
   };
 
@@ -165,19 +165,19 @@ const ProfileGrid = ({ profiles, currentUserId, loadingMore, hasMore, onLoadMore
       .sort((a, b) => {
         const aIsNowPick = a.nowpick_active_until && new Date(a.nowpick_active_until) > new Date();
         const bIsNowPick = b.nowpick_active_until && new Date(b.nowpick_active_until) > new Date();
-        
+
         if (aIsNowPick && !bIsNowPick) return -1;
         if (!aIsNowPick && bIsNowPick) return 1;
-        
+
         // Then by quality score
         const aScore = calculateLocalScore(a);
         const bScore = calculateLocalScore(b);
         if (aScore !== bScore) return bScore - aScore;
-        
+
         // Then by online status
         if (a.online_status && !b.online_status) return -1;
         if (!a.online_status && b.online_status) return 1;
-        
+
         return 0;
       });
   }, [profiles, moderationData]);
@@ -187,19 +187,24 @@ const ProfileGrid = ({ profiles, currentUserId, loadingMore, hasMore, onLoadMore
     const highlighted = new Map<string, 'active' | 'featured'>();
     let count = 0;
     const MAX_HIGHLIGHTS = 2;
-    
+
     for (const profile of moderatedProfiles) {
       if (count >= MAX_HIGHLIGHTS) break;
-      
+
       const { eligible, type } = isHighlightCandidate(profile);
       if (eligible) {
         highlighted.set(profile.user_id, type);
         count++;
       }
     }
-    
+
     return highlighted;
   }, [moderatedProfiles]);
+
+  // Handle For You variant content specifically
+  if (isPrime && isLimitReached) {
+    // Logic for upsell handled below
+  }
 
   // Intersection Observer for infinite scroll
   useEffect(() => {
@@ -237,10 +242,13 @@ const ProfileGrid = ({ profiles, currentUserId, loadingMore, hasMore, onLoadMore
         {moderatedProfiles.map((profile, index) => {
           const highlightType = highlightedProfileIds.get(profile.user_id);
           const isHighlighted = !!highlightType;
-          
+
+          // Logic for displaying For You style (if requested by parent or specific logic)
+          // For now, standard grid doesn't force "For You" variant unless specified.
+
           return (
-            <div 
-              key={profile.user_id} 
+            <div
+              key={profile.user_id}
               className="stagger-item"
               style={{ animationDelay: `${Math.min(index * 0.03, 0.4)}s` }}
             >
@@ -252,6 +260,7 @@ const ProfileGrid = ({ profiles, currentUserId, loadingMore, hasMore, onLoadMore
                 isHighlighted={isHighlighted}
                 highlightType={highlightType}
                 viewerIsPrime={isPrime}
+                hideDistance={true} // Always hide distance on grid per new requirements
               />
             </div>
           );
@@ -259,9 +268,9 @@ const ProfileGrid = ({ profiles, currentUserId, loadingMore, hasMore, onLoadMore
         {/* Prime Upsell Card - shown when FREE user hits limit */}
         {!isPrime && isLimitReached && (
           <div className="stagger-item" style={{ animationDelay: "0.5s" }}>
-            <div 
+            <div
               onClick={() => navigate("/prime")}
-              className="relative aspect-[3/4] rounded-xl overflow-hidden cursor-pointer group bg-gradient-to-br from-prime/20 via-prime/10 to-background border border-prime/30 hover:border-prime/50 transition-all flex flex-col items-center justify-center p-3 text-center"
+              className="relative aspect-[4/5] rounded-xl overflow-hidden cursor-pointer group bg-gradient-to-br from-prime/20 via-prime/10 to-background border border-prime/30 hover:border-prime/50 transition-all flex flex-col items-center justify-center p-3 text-center"
             >
               <div className="w-12 h-12 rounded-full bg-prime/20 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
                 <Eye className="h-6 w-6 text-prime" />
