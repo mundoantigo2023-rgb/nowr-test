@@ -91,7 +91,6 @@ export const useInfiniteProfiles = (userId: string | undefined, searchPreference
           .from("profiles")
           .select("user_id, display_name, age, city, photos, online_status, is_prime, nowpick_active_until, short_description, intention_tags, last_active, latitude, longitude, private_photos, allow_highlight, invisible_mode, visible_gender, hide_activity_status")
           .neq("user_id", userId)
-          .eq("onboarding_completed", true)
           .or("invisible_mode.is.null,invisible_mode.eq.false");
 
         if (searchPreference === "men") {

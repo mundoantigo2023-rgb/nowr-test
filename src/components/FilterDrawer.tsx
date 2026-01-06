@@ -26,21 +26,21 @@ interface FilterDrawerProps {
   onSearchPreferenceChange?: (pref: SearchPreference) => void;
 }
 
-const FilterDrawer = ({ 
-  filters, 
-  onFiltersChange, 
+const FilterDrawer = ({
+  filters,
+  onFiltersChange,
   isPrime = false,
   searchPreference,
-  onSearchPreferenceChange 
+  onSearchPreferenceChange
 }: FilterDrawerProps) => {
   const [localFilters, setLocalFilters] = useState<FilterState>(filters);
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
   const { t } = useLanguage();
-  
+
   // Prevent carry-over clicks
   const interactionEnabled = useInteractionDelay(open, 350);
-  
+
   const searchPreferenceOptions: { id: SearchPreference; label: string }[] = [
     { id: "men", label: t("men") },
     { id: "women", label: t("women") },
@@ -90,31 +90,7 @@ const FilterDrawer = ({
         </SheetHeader>
 
         <div className="space-y-6 relative">
-          {/* Search Preference - Always visible, not Prime-locked */}
-          {onSearchPreferenceChange && (
-            <div className="space-y-3">
-              <span className="text-sm font-medium text-foreground">{t("lookingFor")}</span>
-              <div className="flex gap-2">
-                {searchPreferenceOptions.map((option) => (
-                  <button
-                    key={option.id}
-                    onClick={() => onSearchPreferenceChange(option.id)}
-                    className={cn(
-                      "flex-1 py-2 rounded-lg text-sm font-medium transition-all",
-                      searchPreference === option.id
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-secondary text-muted-foreground hover:text-foreground"
-                    )}
-                  >
-                    {option.label}
-                  </button>
-                ))}
-              </div>
-              <p className="text-xs text-muted-foreground">
-                {t("searchPreferencesDesc")}
-              </p>
-            </div>
-          )}
+
 
           {/* Prime Lock Overlay for non-Prime users */}
           {!isPrime && (

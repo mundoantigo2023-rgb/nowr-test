@@ -281,6 +281,10 @@ const Home = () => {
               filters={filters}
               onFiltersChange={setFilters}
               isPrime={isPrime}
+              // We pass null for handling change here if we want to remove the control, 
+              // but for now keeping it as a "Temporary Override" or fully sync?
+              // User said "configured in my profile". 
+              // Let's keep it sync'd: passing the current pref and handler updates DB.
               searchPreference={searchPreference as "men" | "women" | "both" | null}
               onSearchPreferenceChange={handleSearchPreferenceChange}
             />
