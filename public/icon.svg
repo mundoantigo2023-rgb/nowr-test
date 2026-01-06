@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 48" width="512" height="472.6">
+  <defs>
+    <linearGradient id="nowr-icon-gradient-static" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="hsl(270, 80%, 66%)" />
+      <stop offset="100%" stop-color="hsl(280, 70%, 55%)" />
+    </linearGradient>
+    
+    <linearGradient id="nowr-icon-gradient-2-static" x1="100%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="hsl(280, 75%, 60%)" />
+      <stop offset="100%" stop-color="hsl(265, 70%, 52%)" />
+    </linearGradient>
+    
+    <filter id="nowr-icon-glow-static" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="1.5" result="coloredBlur" />
+      <feMerge>
+        <feMergeNode in="coloredBlur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+    
+    <filter id="nowr-icon-center-glow-static" x="-100%" y="-100%" width="300%" height="300%">
+      <feGaussianBlur stdDeviation="2" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <g>
+    <!-- Left shape -->
+    <path
+      d="M8 24 C8 12, 20 8, 28 14 L24 24 L28 34 C20 40, 8 36, 8 24Z"
+      fill="url(#nowr-icon-gradient-static)"
+      filter="url(#nowr-icon-glow-static)"
+    />
+    
+    <!-- Right shape -->
+    <path
+      d="M44 24 C44 12, 32 8, 24 14 L28 24 L24 34 C32 40, 44 36, 44 24Z"
+      fill="url(#nowr-icon-gradient-2-static)"
+      filter="url(#nowr-icon-glow-static)"
+    />
+    
+    <!-- Connection point -->
+    <circle
+      cx="26"
+      cy="24"
+      r="3"
+      fill="hsl(0, 0%, 98%)"
+      filter="url(#nowr-icon-center-glow-static)"
+    />
+  </g>
+</svg>

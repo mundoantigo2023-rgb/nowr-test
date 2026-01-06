@@ -1,0 +1,10 @@
+project_id = "yynrmnnrwbobhsbjrouo"
+
+[functions.translate-message]
+verify_jwt = false
+
+[functions.auto-reply]
+verify_jwt = false
+
+[functions.send-retention-notifications]
+verify_jwt = false
