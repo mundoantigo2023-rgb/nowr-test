@@ -37,7 +37,7 @@ const Home = () => {
   const { track, trackPageView } = useAnalytics();
   const { activityData, getCopy } = useCityActivity(userCity);
   const cityDynamicCopy = getCopy();
-  
+
   // Use the presence tracker hook for activity management
   usePresenceTracker(user?.id);
 
@@ -79,7 +79,7 @@ const Home = () => {
         // Track session start and page view
         track("session_started");
         trackPageView("discovery", { userId: session.user.id });
-        
+
         // Fetch user's city, prime status, and search preference
         supabase.from("profiles")
           .select("city, is_prime, search_preference")
@@ -88,7 +88,7 @@ const Home = () => {
           .then(({ data }) => {
             if (data?.city) setUserCity(data.city);
             setIsPrime(data?.is_prime || false);
-            
+
             // If no search_preference, redirect to onboarding
             if (!data?.search_preference) {
               navigate("/onboarding");
@@ -132,10 +132,10 @@ const Home = () => {
   // Handle search preference change
   const handleSearchPreferenceChange = async (pref: "men" | "women" | "both") => {
     if (!user) return;
-    
+
     setSearchPreference(pref);
     track("search_preference_changed", { preference: pref });
-    
+
     // Save to database
     try {
       await supabase
@@ -161,9 +161,9 @@ const Home = () => {
     const a =
       Math.sin(dLat / 2) * Math.sin(dLat / 2) +
       Math.cos((lat1 * Math.PI) / 180) *
-        Math.cos((lat2 * Math.PI) / 180) *
-        Math.sin(dLng / 2) *
-        Math.sin(dLng / 2);
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLng / 2) *
+      Math.sin(dLng / 2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return R * c;
   };
@@ -258,20 +258,20 @@ const Home = () => {
       {/* Header */}
       <header className="sticky top-0 z-50 bg-card/95 backdrop-blur-lg border-b border-border/50">
         <div className="px-4 py-3 flex items-center justify-between">
-          <NowrBrandLogo size="sm" />
-          <FilterDrawer 
-            filters={filters} 
-            onFiltersChange={setFilters} 
+          <NowrBrandLogo size="sm" animated={true} />
+          <FilterDrawer
+            filters={filters}
+            onFiltersChange={setFilters}
             isPrime={isPrime}
             searchPreference={searchPreference as "men" | "women" | "both" | null}
             onSearchPreferenceChange={handleSearchPreferenceChange}
           />
         </div>
-        
+
         {/* Quick filter chips */}
         <div className="px-4 pb-2">
-          <FilterChips 
-            chips={quickFilters} 
+          <FilterChips
+            chips={quickFilters}
             onToggle={toggleQuickFilter}
             searchPreference={searchPreference as "men" | "women" | "both" | null}
             onSearchPreferenceChange={handleSearchPreferenceChange}
@@ -281,8 +281,8 @@ const Home = () => {
 
       {/* Live presence indicator - single unified display */}
       <div className="px-4 py-2 flex items-center justify-between">
-        <LivePresenceIndicator 
-          count={livePresenceCount} 
+        <LivePresenceIndicator
+          count={livePresenceCount}
           label={cityDynamicCopy.presenceLabel}
           activityLevel={activityData?.activityLevel}
         />
@@ -295,8 +295,8 @@ const Home = () => {
 
       {/* Main content */}
       <main className="flex-1 px-1.5 pb-4 overflow-y-auto">
-        <ProfileGrid 
-          profiles={filteredProfiles} 
+        <ProfileGrid
+          profiles={filteredProfiles}
           currentUserId={user?.id}
           loadingMore={loadingMore}
           hasMore={hasMore && !isLimitReached}
