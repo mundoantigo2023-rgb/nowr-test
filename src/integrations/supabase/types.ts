@@ -151,386 +151,394 @@ export type Database = {
           },
         ]
       }
-      interests: {
-        Row: {
-          created_at: string | null
-          id: string
-          label: string
-        }
-        Insert: {
-          created_at?: string | null
-          id?: string
-          label: string
-        }
-        Update: {
-          created_at?: string | null
-          id?: string
-          label?: string
-        }
-        Relationships: []
-      }
-      matches: {
-        Row: {
-          created_at: string | null
-          expires_at: string
-          id: string
-          status: string
-          user1_id: string
-          user2_id: string
-        }
-        Insert: {
-          created_at?: string | null
-          expires_at?: string
-          id?: string
-          status?: string
-          user1_id: string
-          user2_id: string
-        }
-        Update: {
-          created_at?: string | null
-          expires_at?: string
-          id?: string
-          status?: string
-          user1_id?: string
-          user2_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "matches_user1_id_fkey"
-            columns: ["user1_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["user_id"]
-          },
-          {
-            foreignKeyName: "matches_user2_id_fkey"
-            columns: ["user2_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["user_id"]
-          },
-        ]
-      }
-      messages: {
-        Row: {
-          content: string
-          created_at: string | null
-          id: string
-          is_read: boolean | null
-          match_id: string
-          sender_id: string
-          type: string
-        }
-        Insert: {
-          content: string
-          created_at?: string | null
-          id?: string
-          is_read?: boolean | null
-          match_id: string
-          sender_id: string
-          type?: string
-        }
-        Update: {
-          content?: string
-          created_at?: string | null
-          id?: string
-          is_read?: boolean | null
-          match_id?: string
-          sender_id?: string
-          type?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "messages_match_id_fkey"
-            columns: ["match_id"]
-            isOneToOne: false
-            referencedRelation: "matches"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "messages_sender_id_fkey"
-            columns: ["sender_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["user_id"]
-          },
-        ]
-      }
-      profile_views: {
-        Row: {
-          created_at: string | null
-          id: string
-          viewed_id: string
-          viewer_id: string
-        }
-        Insert: {
-          created_at?: string | null
-          id?: string
-          viewed_id: string
-          viewer_id: string
-        }
-        Update: {
-          created_at?: string | null
-          id?: string
-          viewed_id?: string
-          viewer_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "profile_views_viewed_id_fkey"
-            columns: ["viewed_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["user_id"]
-          },
-          {
-            foreignKeyName: "profile_views_viewer_id_fkey"
-            columns: ["viewer_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["user_id"]
-          },
-        ]
-      }
-      profiles: {
-        Row: {
-          age: number
-          allow_highlight: boolean | null
-          city: string | null
-          created_at: string | null
-          display_name: string
-          hide_activity_status: boolean | null
-          intention_tags: string[] | null
-          invisible_mode: boolean | null
-          is_prime: boolean | null
-          last_active: string | null
-          latitude: number | null
-          longitude: number | null
-          nowpick_active_until: string | null
-          nowpick_last_used: string | null
-          online_status: boolean | null
-          photos: string[]
-          private_photos: string[] | null
-          search_preference: string | null
-          short_description: string | null
-          updated_at: string | null
-          user_id: string
-          visible_gender: string | null
-        }
-        Insert: {
-          age?: number
-          allow_highlight?: boolean | null
-          city?: string | null
-          created_at?: string | null
-          display_name?: string
-          hide_activity_status?: boolean | null
-          intention_tags?: string[] | null
-          invisible_mode?: boolean | null
-          is_prime?: boolean | null
-          last_active?: string | null
-          latitude?: number | null
-          longitude?: number | null
-          nowpick_active_until?: string | null
-          nowpick_last_used?: string | null
-          online_status?: boolean | null
-          photos?: string[]
-          private_photos?: string[] | null
-          search_preference?: string | null
-          short_description?: string | null
-          updated_at?: string | null
-          user_id: string
-          visible_gender?: string | null
-        }
-        Update: {
-          age?: number
-          allow_highlight?: boolean | null
-          city?: string | null
-          created_at?: string | null
-          display_name?: string
-          hide_activity_status?: boolean | null
-          intention_tags?: string[] | null
-          invisible_mode?: boolean | null
-          is_prime?: boolean | null
-          last_active?: string | null
-          latitude?: number | null
-          longitude?: number | null
-          nowpick_active_until?: string | null
-          nowpick_last_used?: string | null
-          online_status?: boolean | null
-          photos?: string[]
-          private_photos?: string[] | null
-          search_preference?: string | null
-          short_description?: string | null
-          updated_at?: string | null
-          user_id?: string
-          visible_gender?: string | null
-        }
-        Relationships: []
-      }
-      reports: {
-        Row: {
-          created_at: string | null
-          description: string | null
-          id: string
-          reason: string
-          reported_id: string
-          reporter_id: string
-          status: string
-        }
-        Insert: {
-          created_at?: string | null
-          description?: string | null
-          id?: string
-          reason: string
-          reported_id: string
-          reporter_id: string
-          status?: string
-        }
-        Update: {
-          created_at?: string | null
-          description?: string | null
-          id?: string
-          reason?: string
-          reported_id?: string
-          reporter_id?: string
-          status?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "reports_reported_id_fkey"
-            columns: ["reported_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["user_id"]
-          },
-          {
-            foreignKeyName: "reports_reporter_id_fkey"
-            columns: ["reporter_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["user_id"]
-          },
-        ]
-      }
-      retention_notifications: {
-        Row: {
-          created_at: string | null
-          id: string
-          is_read: boolean | null
-          scheduled_for: string
-          title: string
-          type: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string | null
-          id?: string
-          is_read?: boolean | null
-          scheduled_for: string
-          title: string
-          type: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string | null
-          id?: string
-          is_read?: boolean | null
-          scheduled_for?: string
-          title?: string
-          type?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "retention_notifications_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["user_id"]
-          },
-        ]
-      }
-      screenshot_events: {
-        Row: {
-          created_at: string | null
-          id: string
-          target_user_id: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string | null
-          id?: string
-          target_user_id: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string | null
-          id?: string
-          target_user_id?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "screenshot_events_target_user_id_fkey"
-            columns: ["target_user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["user_id"]
-          },
-          {
-            foreignKeyName: "screenshot_events_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["user_id"]
-          },
-        ]
-      }
+      Relationships: []
     }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      get_nearby_profiles: {
-        Args: {
-          lat: number
-          long: number
-          radius_km?: number
-          limit_count?: number
-          offset_count?: number
-          filter_gender?: string
-          ignore_user_id?: string
-        }
-        Returns: {
-          user_id: string
-          display_name: string
-          age: number
-          city: string
-          photos: string[]
-          online_status: boolean
-          is_prime: boolean
-          nowpick_active_until: string
-          short_description: string
-          intention_tags: string[]
-          last_active: string
-          latitude: number
-          longitude: number
-          private_photos: string[]
-          allow_highlight: boolean
-          invisible_mode: boolean
-          visible_gender: string
-          hide_activity_status: boolean
-          dist_km: number
-        }[]
+    interests: {
+      Row: {
+        created_at: string | null
+        id: string
+        label: string
+        from_user_id: string | null
+        to_user_id: string | null
       }
+      Insert: {
+        created_at?: string | null
+        id?: string
+        label?: string
+        from_user_id?: string | null
+        to_user_id?: string | null
+      }
+      Update: {
+        created_at?: string | null
+        id?: string
+        label?: string
+        from_user_id?: string | null
+        to_user_id?: string | null
+      }
+      Relationships: []
     }
-    Enums: {
-      [_ in never]: never
+    matches: {
+      Row: {
+        created_at: string | null
+        expires_at: string
+        id: string
+        status: string
+        user1_id: string
+        user2_id: string
+      }
+      Insert: {
+        created_at?: string | null
+        expires_at?: string
+        id?: string
+        status?: string
+        user1_id: string
+        user2_id: string
+      }
+      Update: {
+        created_at?: string | null
+        expires_at?: string
+        id?: string
+        status?: string
+        user1_id?: string
+        user2_id?: string
+      }
+      Relationships: [
+        {
+          foreignKeyName: "matches_user1_id_fkey"
+          columns: ["user1_id"]
+          isOneToOne: false
+          referencedRelation: "profiles"
+          referencedColumns: ["user_id"]
+        },
+        {
+          foreignKeyName: "matches_user2_id_fkey"
+          columns: ["user2_id"]
+          isOneToOne: false
+          referencedRelation: "profiles"
+          referencedColumns: ["user_id"]
+        },
+      ]
     }
-    CompositeTypes: {
-      [_ in never]: never
+    messages: {
+      Row: {
+        content: string
+        created_at: string | null
+        id: string
+        is_read: boolean | null
+        match_id: string
+        sender_id: string
+        type: string
+      }
+      Insert: {
+        content: string
+        created_at?: string | null
+        id?: string
+        is_read?: boolean | null
+        match_id: string
+        sender_id: string
+        type?: string
+      }
+      Update: {
+        content?: string
+        created_at?: string | null
+        id?: string
+        is_read?: boolean | null
+        match_id?: string
+        sender_id?: string
+        type?: string
+      }
+      Relationships: [
+        {
+          foreignKeyName: "messages_match_id_fkey"
+          columns: ["match_id"]
+          isOneToOne: false
+          referencedRelation: "matches"
+          referencedColumns: ["id"]
+        },
+        {
+          foreignKeyName: "messages_sender_id_fkey"
+          columns: ["sender_id"]
+          isOneToOne: false
+          referencedRelation: "profiles"
+          referencedColumns: ["user_id"]
+        },
+      ]
+    }
+    profile_views: {
+      Row: {
+        created_at: string | null
+        id: string
+        viewed_id: string
+        viewer_id: string
+      }
+      Insert: {
+        created_at?: string | null
+        id?: string
+        viewed_id: string
+        viewer_id: string
+      }
+      Update: {
+        created_at?: string | null
+        id?: string
+        viewed_id?: string
+        viewer_id?: string
+      }
+      Relationships: [
+        {
+          foreignKeyName: "profile_views_viewed_id_fkey"
+          columns: ["viewed_id"]
+          isOneToOne: false
+          referencedRelation: "profiles"
+          referencedColumns: ["user_id"]
+        },
+        {
+          foreignKeyName: "profile_views_viewer_id_fkey"
+          columns: ["viewer_id"]
+          isOneToOne: false
+          referencedRelation: "profiles"
+          referencedColumns: ["user_id"]
+        },
+      ]
+    }
+    profiles: {
+      Row: {
+        age: number
+        allow_highlight: boolean | null
+        city: string | null
+        created_at: string | null
+        display_name: string
+        hide_activity_status: boolean | null
+        intention_tags: string[] | null
+        invisible_mode: boolean | null
+        is_prime: boolean | null
+        last_active: string | null
+        latitude: number | null
+        longitude: number | null
+        nowpick_active_until: string | null
+        nowpick_last_used: string | null
+        online_status: boolean | null
+        photos: string[]
+        private_photos: string[] | null
+        search_preference: string | null
+        short_description: string | null
+        updated_at: string | null
+        user_id: string
+        visible_gender: string | null
+      }
+      Insert: {
+        age?: number
+        allow_highlight?: boolean | null
+        city?: string | null
+        created_at?: string | null
+        display_name?: string
+        hide_activity_status?: boolean | null
+        intention_tags?: string[] | null
+        invisible_mode?: boolean | null
+        is_prime?: boolean | null
+        last_active?: string | null
+        latitude?: number | null
+        longitude?: number | null
+        nowpick_active_until?: string | null
+        nowpick_last_used?: string | null
+        online_status?: boolean | null
+        photos?: string[]
+        private_photos?: string[] | null
+        search_preference?: string | null
+        short_description?: string | null
+        updated_at?: string | null
+        user_id: string
+        visible_gender?: string | null
+      }
+      Update: {
+        age?: number
+        allow_highlight?: boolean | null
+        city?: string | null
+        created_at?: string | null
+        display_name?: string
+        hide_activity_status?: boolean | null
+        intention_tags?: string[] | null
+        invisible_mode?: boolean | null
+        is_prime?: boolean | null
+        last_active?: string | null
+        latitude?: number | null
+        longitude?: number | null
+        nowpick_active_until?: string | null
+        nowpick_last_used?: string | null
+        online_status?: boolean | null
+        photos?: string[]
+        private_photos?: string[] | null
+        search_preference?: string | null
+        short_description?: string | null
+        updated_at?: string | null
+        user_id?: string
+        visible_gender?: string | null
+      }
+      Relationships: []
+    }
+    reports: {
+      Row: {
+        created_at: string | null
+        description: string | null
+        id: string
+        reason: string
+        reported_id: string
+        reporter_id: string
+        status: string
+      }
+      Insert: {
+        created_at?: string | null
+        description?: string | null
+        id?: string
+        reason: string
+        reported_id: string
+        reporter_id: string
+        status?: string
+      }
+      Update: {
+        created_at?: string | null
+        description?: string | null
+        id?: string
+        reason?: string
+        reported_id?: string
+        reporter_id?: string
+        status?: string
+      }
+      Relationships: [
+        {
+          foreignKeyName: "reports_reported_id_fkey"
+          columns: ["reported_id"]
+          isOneToOne: false
+          referencedRelation: "profiles"
+          referencedColumns: ["user_id"]
+        },
+        {
+          foreignKeyName: "reports_reporter_id_fkey"
+          columns: ["reporter_id"]
+          isOneToOne: false
+          referencedRelation: "profiles"
+          referencedColumns: ["user_id"]
+        },
+      ]
+    }
+    retention_notifications: {
+      Row: {
+        created_at: string | null
+        id: string
+        is_read: boolean | null
+        scheduled_for: string
+        title: string
+        type: string
+        user_id: string
+      }
+      Insert: {
+        created_at?: string | null
+        id?: string
+        is_read?: boolean | null
+        scheduled_for: string
+        title: string
+        type: string
+        user_id: string
+      }
+      Update: {
+        created_at?: string | null
+        id?: string
+        is_read?: boolean | null
+        scheduled_for?: string
+        title?: string
+        type?: string
+        user_id?: string
+      }
+      Relationships: [
+        {
+          foreignKeyName: "retention_notifications_user_id_fkey"
+          columns: ["user_id"]
+          isOneToOne: false
+          referencedRelation: "profiles"
+          referencedColumns: ["user_id"]
+        },
+      ]
+    }
+    screenshot_events: {
+      Row: {
+        created_at: string | null
+        id: string
+        target_user_id: string
+        user_id: string
+      }
+      Insert: {
+        created_at?: string | null
+        id?: string
+        target_user_id: string
+        user_id: string
+      }
+      Update: {
+        created_at?: string | null
+        id?: string
+        target_user_id?: string
+        user_id?: string
+      }
+      Relationships: [
+        {
+          foreignKeyName: "screenshot_events_target_user_id_fkey"
+          columns: ["target_user_id"]
+          isOneToOne: false
+          referencedRelation: "profiles"
+          referencedColumns: ["user_id"]
+        },
+        {
+          foreignKeyName: "screenshot_events_user_id_fkey"
+          columns: ["user_id"]
+          isOneToOne: false
+          referencedRelation: "profiles"
+          referencedColumns: ["user_id"]
+        },
+      ]
     }
   }
+  Views: {
+    [_ in never]: never
+  }
+  Functions: {
+    get_nearby_profiles: {
+      Args: {
+        lat: number
+        long: number
+        radius_km?: number
+        limit_count?: number
+        offset_count?: number
+        filter_gender?: string
+        ignore_user_id?: string
+      }
+      Returns: {
+        user_id: string
+        display_name: string
+        age: number
+        city: string
+        photos: string[]
+        online_status: boolean
+        is_prime: boolean
+        nowpick_active_until: string
+        short_description: string
+        intention_tags: string[]
+        last_active: string
+        latitude: number
+        longitude: number
+        private_photos: string[]
+        allow_highlight: boolean
+        invisible_mode: boolean
+        visible_gender: string
+        hide_activity_status: boolean
+        dist_km: number
+      }[]
+    }
+  }
+  Enums: {
+    [_ in never]: never
+  }
+  CompositeTypes: {
+    [_ in never]: never
+  }
+}
 }
 
 type PublicSchema = Database[Extract<keyof Database, "public">]

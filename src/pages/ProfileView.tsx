@@ -80,9 +80,9 @@ function calculateDistance(
   const a =
     Math.sin(dLat / 2) * Math.sin(dLat / 2) +
     Math.cos((lat1 * Math.PI) / 180) *
-      Math.cos((lat2 * Math.PI) / 180) *
-      Math.sin(dLon / 2) *
-      Math.sin(dLon / 2);
+    Math.cos((lat2 * Math.PI) / 180) *
+    Math.sin(dLon / 2) *
+    Math.sin(dLon / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return R * c;
 }
@@ -111,10 +111,10 @@ import { AVAILABILITY_OPTIONS, INTEREST_OPTIONS } from "@/lib/profileOptions";
 const getTagLabel = (tagId: string): string => {
   const availability = AVAILABILITY_OPTIONS.find(o => o.id === tagId);
   if (availability) return availability.label;
-  
+
   const interest = INTEREST_OPTIONS.find(o => o.id === tagId);
   if (interest) return `${interest.emoji} ${interest.label}`;
-  
+
   return tagId;
 };
 
@@ -144,10 +144,10 @@ const ProfileView = () => {
   const [slideDirection, setSlideDirection] = useState<'left' | 'right'>('left');
   const [scrollY, setScrollY] = useState(0);
   const [currentUserIsPrime, setCurrentUserIsPrime] = useState(false);
-  
+
   // Profile visitors hook - for recording views
   const { recordView } = useProfileVisitors(currentUserId || undefined, false);
-  
+
   // Swipe gesture state
   const touchStartX = useRef<number | null>(null);
   const touchEndX = useRef<number | null>(null);
@@ -222,12 +222,12 @@ const ProfileView = () => {
       const { data: matchData } = await supabase
         .from("matches")
         .select("id")
-        .or(`and(user_a.eq.${session.user.id},user_b.eq.${userId}),and(user_a.eq.${userId},user_b.eq.${session.user.id})`)
+        .or(`and(user1_id.eq.${session.user.id},user2_id.eq.${userId}),and(user1_id.eq.${userId},user2_id.eq.${session.user.id})`)
         .maybeSingle();
 
       setIsMatched(!!matchData);
       setLoading(false);
-      
+
       // Record profile view (for Prime visitors feature)
       recordView(userId);
     };
@@ -254,7 +254,7 @@ const ProfileView = () => {
       if (mutualInterest) {
         await supabase
           .from("matches")
-          .insert({ user_a: currentUserId, user_b: userId });
+          .insert({ user1_id: currentUserId, user2_id: userId });
 
         setIsMatched(true);
         navigate("/match", { state: { matchedProfile: profile } });
@@ -301,9 +301,9 @@ const ProfileView = () => {
     try {
       await supabase.from("reports").insert({
         reporter_id: currentUserId,
-        reported_user_id: userId,
+        reported_id: userId,
         reason: reportReason,
-        details: reportDetails || null,
+        description: reportDetails || null,
       });
 
       toast({
@@ -351,17 +351,17 @@ const ProfileView = () => {
 
   const handleTouchEnd = () => {
     if (!touchStartX.current || !touchEndX.current) return;
-    
+
     const distance = touchStartX.current - touchEndX.current;
     const isSwipeLeft = distance > minSwipeDistance;
     const isSwipeRight = distance < -minSwipeDistance;
-    
+
     if (isSwipeLeft) {
       nextPhoto();
     } else if (isSwipeRight) {
       prevPhoto();
     }
-    
+
     touchStartX.current = null;
     touchEndX.current = null;
   };
@@ -374,8 +374,8 @@ const ProfileView = () => {
     );
   }
 
-  const photos = profile.photos.length > 0 
-    ? profile.photos 
+  const photos = profile.photos.length > 0
+    ? profile.photos
     : [`https://api.dicebear.com/7.x/avataaars/svg?seed=${profile.user_id}`];
 
   const bioTruncated = profile.short_description && profile.short_description.length > 120;
@@ -395,383 +395,224 @@ const ProfileView = () => {
   const parallaxOpacity = Math.max(1 - scrollY * 0.002, 0.7);
 
   return (
-    <div className="min-h-screen bg-background animate-fade-in pb-28">
-      {/* Header fixo com blur */}
-      <header className="fixed top-0 left-0 right-0 z-50 p-4 flex items-center justify-between">
-        <Button
-          variant="ghost"
-          size="icon"
-          type="button"
-          onClick={() => {
-            if (window.history.length > 1) {
-              navigate(-1);
-            } else {
-              navigate("/home");
-            }
-          }}
-          className="w-10 h-10 rounded-full bg-background/70 backdrop-blur-xl border border-border/60 hover:bg-background hover:scale-105 transition-all duration-150"
-        >
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
+    <div className="min-h-screen bg-background relative">
+      <main className="pt-0 pb-32">
+        {/* Top Navigation */}
+        <div className="flex items-center justify-between p-4 sticky top-0 z-50 bg-background/80 backdrop-blur-md">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => window.history.length > 1 ? navigate(-1) : navigate("/home")}
+            className="rounded-full hover:bg-secondary/50"
+          >
+            <ArrowLeft className="h-6 w-6" />
+          </Button>
 
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              disabled={!interactionEnabled}
-              onClick={(e) => e.stopPropagation()}
-              className="w-10 h-10 rounded-full bg-background/70 backdrop-blur-xl border border-border/60 hover:bg-background hover:scale-105 transition-all duration-150"
-            >
-              <MoreHorizontal className="h-5 w-5" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="bg-card border-border">
-            <DropdownMenuItem
-              onClick={(e) => {
-                e.stopPropagation();
-                if (!interactionEnabled) return;
-                setShowReportDialog(true);
-              }}
-              className="text-destructive focus:text-destructive focus:bg-destructive/10"
-            >
-              <Flag className="w-4 h-4 mr-2" />
-              Reportar
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={(e) => {
-                e.stopPropagation();
-                if (!interactionEnabled) return;
-                setShowBlockDialog(true);
-              }}
-              className="text-destructive focus:text-destructive focus:bg-destructive/10"
-            >
-              <Ban className="w-4 h-4 mr-2" />
-              Bloquear
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </header>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="rounded-full hover:bg-secondary/50">
+                <MoreHorizontal className="h-6 w-6" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => setShowReportDialog(true)} className="text-destructive">
+                <Flag className="w-4 h-4 mr-2" /> Reportar
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setShowBlockDialog(true)} className="text-destructive">
+                <Ban className="w-4 h-4 mr-2" /> Bloquear
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
 
-
-      <main className="pt-16">
-        {/* Foto principal (NO fullscreen): card + contain + 30–35% de altura */}
-        <section className="px-4 flex justify-center">
-          <div className="relative w-fit">
-            {/* Prime subtle glow waves effect */}
-            {profile.is_prime && (
-              <>
-                <div className="absolute -inset-2 rounded-3xl prime-glow-wave-1" />
-                <div className="absolute -inset-2 rounded-3xl prime-glow-wave-2" />
-              </>
-            )}
-            <div
+        <div className="px-4 max-w-md mx-auto relative">
+          {/* PROFILE PHOTO - 4:5 Ratio, Centered */}
+          <div className="relative w-full aspect-[4/5] max-h-[55vh] mx-auto rounded-3xl overflow-hidden shadow-sm bg-secondary/30 touch-none">
+            {/* Photo Carousel */}
+            <img
+              src={photos[currentPhoto]}
+              alt={profile.display_name}
               className={cn(
-                "relative h-[32vh] max-h-[35vh] min-h-[240px] aspect-square rounded-3xl overflow-hidden bg-card border shadow-lg animate-scale-in touch-pan-y",
-                profile.is_prime ? "border-primary/50" : "border-border"
+                "w-full h-full object-cover transition-opacity duration-200",
+                isPhotoTransitioning ? "opacity-80" : "opacity-100"
               )}
               onTouchStart={handleTouchStart}
               onTouchMove={handleTouchMove}
               onTouchEnd={handleTouchEnd}
-              aria-label="Foto de perfil"
-            >
-            <img
-              src={photos[currentPhoto]}
-              alt={`Foto de perfil de ${profile.display_name}`}
-              className={cn(
-                "absolute inset-0 w-full h-full object-cover select-none pointer-events-none transition-all duration-200 ease-out will-change-transform",
-                isPhotoTransitioning && slideDirection === 'left' && "opacity-0 translate-x-4",
-                isPhotoTransitioning && slideDirection === 'right' && "opacity-0 -translate-x-4"
-              )}
-              style={{
-                transform: `translateY(${parallaxOffset}px) scale(${parallaxScale})`,
-                opacity: parallaxOpacity,
-              }}
-              loading="eager"
-              decoding="async"
             />
 
-            {/* Indicadores tipo stories (sin invadir la imagen) */}
+            {/* Carousel Indicators */}
             {photos.length > 1 && (
-              <div className="absolute top-3 left-3 right-3 z-20 flex gap-1">
+              <div className="absolute top-2 left-0 right-0 flex justify-center gap-1 px-2 z-10">
                 {photos.map((_, idx) => (
-                  <div key={idx} className="flex-1 h-0.5 rounded-full overflow-hidden bg-foreground/20">
-                    <div
-                      className={cn(
-                        "h-full rounded-full transition-all duration-300",
-                        idx === currentPhoto
-                          ? "w-full bg-foreground/80"
-                          : idx < currentPhoto
-                            ? "w-full bg-foreground/50"
-                            : "w-0 bg-foreground/30",
-                      )}
-                    />
-                  </div>
+                  <div
+                    key={idx}
+                    className={cn(
+                      "h-1 rounded-full transition-all duration-300 shadow-sm",
+                      idx === currentPhoto ? "w-6 bg-white" : "w-1.5 bg-white/50"
+                    )}
+                  />
                 ))}
               </div>
             )}
 
-            {/* Navegação por toque nas laterais */}
+            {/* Tap Navigation Areas */}
             {photos.length > 1 && (
               <>
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    prevPhoto();
-                  }}
-                  className="absolute left-0 top-0 w-1/3 h-full z-10"
-                  aria-label="Foto anterior"
-                />
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    nextPhoto();
-                  }}
-                  className="absolute right-0 top-0 w-1/3 h-full z-10"
-                  aria-label="Próxima foto"
-                />
+                <div className="absolute top-0 bottom-0 left-0 w-1/3 z-10" onClick={prevPhoto} />
+                <div className="absolute top-0 bottom-0 right-0 w-1/3 z-10" onClick={nextPhoto} />
               </>
             )}
 
-            {/* Abrir visor (lightbox) */}
+            {/* Expand Button */}
             <Button
-              type="button"
               variant="ghost"
               size="icon"
-              disabled={!interactionEnabled}
-              onClick={(e) => {
-                e.stopPropagation();
-                if (!interactionEnabled) return;
-                setPhotoViewerOpen(true);
-              }}
-              className="absolute bottom-3 right-3 z-20 h-10 w-10 rounded-full bg-background/70 backdrop-blur-md border border-border/60 hover:bg-background transition-all duration-150"
-              aria-label="Abrir foto en visor"
+              className="absolute bottom-2 right-2 bg-black/20 backdrop-blur-md rounded-full text-white hover:bg-black/40 z-20"
+              onClick={() => setPhotoViewerOpen(true)}
             >
               <Maximize2 className="h-4 w-4" />
             </Button>
-
-            {/* Gradiente inferior suave para legibilidad */}
-            <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-background via-background/40 to-transparent" />
-            </div>
-          </div>
-        </section>
-
-        {/* Contenido */}
-        <section className="px-4 pt-5 pb-32">
-          {/* Info principal */}
-          <div className="flex items-start justify-between gap-4 mb-4">
-            <div className="min-w-0 flex-1">
-              {/* Badge Prime encima del nombre */}
-              {profile.is_prime && (
-                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-prime/15 border border-prime/25 mb-2">
-                  <Crown className="w-3.5 h-3.5 text-prime animate-prime-shimmer" />
-                  <span className="text-xs font-semibold text-prime">PRIME</span>
-                </div>
-              )}
-              
-              {/* Nombre y edad */}
-              <div className="flex items-baseline gap-2 mb-1">
-                <h1 className="text-2xl font-semibold text-foreground tracking-tight truncate">
-                  {profile.display_name}
-                </h1>
-                <span className="text-xl text-muted-foreground font-light">{profile.age}</span>
-              </div>
-
-              {/* Distancia / ciudad y online */}
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                {/* Badge de distancia */}
-                {distance != null ? (
-                  <div
-                    className={cn(
-                      "inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium",
-                      proximity.bg,
-                      proximity.text
-                    )}
-                  >
-                    <MapPin className="w-3 h-3" />
-                    <span>
-                      {distance < 1
-                        ? `${Math.round(distance * 1000)} m`
-                        : `${distance.toFixed(1)} km`}
-                    </span>
-                  </div>
-                ) : profile.city ? (
-                  <div className="flex items-center gap-1.5 text-muted-foreground text-sm">
-                    <MapPin className="w-3.5 h-3.5" />
-                    <span className="truncate">{profile.city}</span>
-                  </div>
-                ) : null}
-                
-                {/* Ciudad (si hay distancia, mostrar ciudad también) */}
-                {distance != null && profile.city && (
-                  <span className="text-muted-foreground text-sm truncate">
-                    {profile.city}
-                  </span>
-                )}
-
-                {/* Presence indicator */}
-                <PresenceIndicator
-                  lastActive={profile.last_active}
-                  isOnline={profile.online_status || false}
-                  isPrime={!!currentUserIsPrime}
-                  hideActivityStatus={profile.hide_activity_status || false}
-                  isInvisible={(profile.is_prime && profile.invisible_mode) || false}
-                  variant="full"
-                  size="md"
-                />
-              </div>
-            </div>
           </div>
 
-          {/* Bio con "ver más" */}
-          {profile.short_description && (
-            <div className="mb-5">
-              <p className="text-foreground/85 text-sm leading-relaxed">
-                {showFullBio || !bioTruncated
-                  ? profile.short_description
-                  : `${profile.short_description.slice(0, 120)}...`}
-              </p>
-              {bioTruncated && (
-                <button
-                  onClick={() => setShowFullBio(!showFullBio)}
-                  className="mt-1 text-primary text-sm font-medium inline-flex items-center gap-1 hover:text-primary/80 transition-colors"
-                >
-                  {showFullBio ? "Ver menos" : "Ver más"}
-                  <ChevronDown
-                    className={cn(
-                      "w-4 h-4 transition-transform duration-200",
-                      showFullBio && "rotate-180",
-                    )}
-                  />
-                </button>
-              )}
+          {/* PROFILE INFO */}
+          <div className="mt-4 space-y-3">
+            {/* Header: Name & Age */}
+            <div className="flex items-center justify-between">
+              <h1 className="text-2xl font-bold flex items-center gap-2">
+                {profile.display_name}
+                <span className="text-2xl font-normal text-muted-foreground">{profile.age}</span>
+                {profile.is_prime && <Crown className="w-5 h-5 text-prime animate-prime-shimmer ml-1" />}
+              </h1>
             </div>
-          )}
 
-          {/* Tags de intención */}
-          {profile.intention_tags && profile.intention_tags.length > 0 && (
-            <div className="flex flex-wrap gap-2 mb-5">
-              {profile.intention_tags.map((tag, idx) => (
-                <span
-                  key={idx}
-                  className="px-3 py-1.5 rounded-full bg-secondary/50 border border-border text-muted-foreground text-xs font-medium"
-                >
-                  {getTagLabel(tag)}
-                </span>
-              ))}
-            </div>
-          )}
-
-          {/* Galería de miniaturas */}
-          {photos.length > 1 && (
-            <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-              {photos.map((photo, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => setCurrentPhoto(idx)}
-                  className={cn(
-                    "relative flex-shrink-0 w-16 h-16 rounded-xl overflow-hidden transition-all duration-150",
-                    idx === currentPhoto
-                      ? "ring-2 ring-primary ring-offset-2 ring-offset-background scale-105"
-                      : "opacity-70 hover:opacity-100",
-                  )}
-                  aria-label={`Ver foto ${idx + 1}`}
-                >
-                  <img
-                    src={photo}
-                    alt={`Miniatura de foto ${idx + 1} de ${profile.display_name}`}
-                    className="w-full h-full object-cover"
-                    loading="lazy"
-                    decoding="async"
-                  />
-                </button>
-              ))}
-            </div>
-          )}
-        </section>
-      </main>
-
-
-
-      {/* Barra de acciones flotante con glassmorphism */}
-      <div className="fixed bottom-0 left-0 right-0 p-4 pb-6 bg-gradient-to-t from-background via-background/70 to-transparent pointer-events-none">
-        <div
-          className={cn(
-            "mx-auto max-w-md bg-background/70 backdrop-blur-xl border border-border/60 rounded-2xl p-3 shadow-lg",
-            interactionEnabled ? "pointer-events-auto" : "pointer-events-none",
-          )}
-        >
-          <div className="flex items-center justify-center gap-2">
-            {/* Chat */}
-            {isMatched && (
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  navigate("/matches");
-                }}
-                className="w-12 h-12 rounded-xl"
-                aria-label="Abrir chat"
+            {/* Status Accordion (Expandable) */}
+            <div className="border-b border-border pb-3">
+              <button
+                onClick={() => setShowFullBio(!showFullBio)} // Reusing this state for the accordion for now, or clearer naming
+                className="flex items-center gap-2 text-sm font-medium text-foreground/90 hover:opacity-80 transition-opacity"
               >
-                <MessageCircle className="w-5 h-5" />
-              </Button>
+                {profile.online_status ? (
+                  <>
+                    <span className="w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.5)]" />
+                    Conectado ahora
+                  </>
+                ) : (
+                  <>
+                    <span className="w-2.5 h-2.5 bg-gray-400 rounded-full" />
+                    {profile.last_active ? `Activo ${new Date(profile.last_active).toLocaleDateString()}` : "Desconectado"}
+                  </>
+                )}
+                <ChevronDown className={cn("w-4 h-4 text-muted-foreground transition-transform", showFullBio && "rotate-180")} />
+              </button>
+
+              {/* Expanded Details */}
+              <div className={cn(
+                "grid transition-all duration-300 ease-out overflow-hidden",
+                showFullBio ? "grid-rows-[1fr] opacity-100 mt-3" : "grid-rows-[0fr] opacity-0"
+              )}>
+                <div className="min-h-0 flex flex-col gap-2 pl-4 border-l-2 border-border/50">
+                  {distance !== null && (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <MapPin className="w-4 h-4" />
+                      A {distance < 1 ? `${Math.round(distance * 1000)} m` : `${distance.toFixed(1)} km`} de ti
+                    </div>
+                  )}
+                  {profile.city && (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <MapPin className="w-4 h-4 opacity-50" />
+                      {profile.city}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Bio / Description */}
+            {profile.short_description && (
+              <div className="pt-2">
+                <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1">SOBRE MÍ</h3>
+                <p className="text-base leading-relaxed text-foreground whitespace-pre-wrap">
+                  {profile.short_description}
+                </p>
+              </div>
             )}
 
-            {/* Tap (sin corazón) */}
-            <Button
-              type="button"
-              variant={hasInterest ? "secondary" : "prime"}
-              onClick={(e) => {
-                e.stopPropagation();
-                handleSendInterest();
-              }}
-              disabled={hasInterest || sendingInterest || isMatched}
-              className="h-12 px-8 rounded-xl font-semibold transition-all duration-150 active:scale-95"
-            >
-              <Flame className={cn("w-5 h-5", hasInterest ? "opacity-50" : "animate-flame-pulse")} />
-              {hasInterest ? "Tap enviado" : isMatched ? "Match ✓" : "Tap"}
-            </Button>
+            {/* Interests / Tags */}
+            {profile.intention_tags && profile.intention_tags.length > 0 && (
+              <div className="pt-2">
+                <div className="flex flex-wrap gap-2">
+                  {profile.intention_tags.map((tag, i) => (
+                    <span key={i} className="px-3 py-1.5 bg-secondary/50 rounded-lg text-sm font-medium border border-border/50">
+                      {getTagLabel(tag)}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
 
+            {/* Gallery Thumbnails if > 1 */}
+            {photos.length > 1 && (
+              <div className="pt-4">
+                <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">GALERÍA</h3>
+                <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+                  {photos.map((photo, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => setCurrentPhoto(idx)}
+                      className={cn(
+                        "relative w-20 h-20 flex-shrink-0 rounded-xl overflow-hidden border-2 transition-all",
+                        currentPhoto === idx ? "border-primary" : "border-transparent opacity-70"
+                      )}
+                    >
+                      <img src={photo} alt="" className="w-full h-full object-cover" />
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
-            {/* Reportar */}
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              onClick={(e) => {
-                e.stopPropagation();
-                setShowReportDialog(true);
-              }}
-              className="w-12 h-12 rounded-xl"
-              aria-label="Reportar"
-            >
-              <Flag className="w-5 h-5" />
-            </Button>
-
-            {/* Bloquear */}
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              onClick={(e) => {
-                e.stopPropagation();
-                setShowBlockDialog(true);
-              }}
-              className="w-12 h-12 rounded-xl"
-              aria-label="Bloquear"
-            >
-              <Ban className="w-5 h-5" />
-            </Button>
           </div>
         </div>
+      </main>
+
+      {/* Sticky Bottom Actions */}
+      <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/90 backdrop-blur-xl border-t border-border z-50">
+        <div className="max-w-md mx-auto grid grid-cols-5 gap-3">
+          {/* Secondary Actions */}
+          <Button variant="outline" size="icon" className="h-12 w-12 rounded-full" onClick={handleBlock}>
+            <Ban className="h-5 w-5 text-muted-foreground" />
+          </Button>
+
+          {/* Main CTA */}
+          {isMatched ? (
+            <Button
+              className="col-span-3 h-12 rounded-full text-base font-bold bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20"
+              onClick={() => navigate("/matches")}
+            >
+              <MessageCircle className="w-5 h-5 mr-2" />
+              Chat
+            </Button>
+          ) : (
+            <Button
+              className={cn(
+                "col-span-3 h-12 rounded-full text-base font-bold shadow-lg transition-all",
+                hasInterest ? "bg-secondary text-secondary-foreground" : "bg-primary text-primary-foreground shadow-primary/20"
+              )}
+              onClick={handleSendInterest}
+              disabled={hasInterest || sendingInterest}
+            >
+              {hasInterest ? "Tap Enviado" : "Enviar Tap"}
+              {!hasInterest && <Flame className="w-5 h-5 ml-2 fill-current" />}
+            </Button>
+          )}
+
+          {/* Report Action */}
+          <Button variant="outline" size="icon" className="h-12 w-12 rounded-full" onClick={() => setShowReportDialog(true)}>
+            <Flag className="h-5 w-5 text-muted-foreground" />
+          </Button>
+        </div>
       </div>
-
-
 
       {/* Visor de foto (lightbox secundario) */}
       <Dialog open={photoViewerOpen} onOpenChange={setPhotoViewerOpen}>
