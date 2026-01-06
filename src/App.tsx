@@ -29,44 +29,52 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
+// Helper component to run global logic
+import { useLocation } from "@/hooks/useLocation";
+const GlobalLogic = () => {
+  useLocation();
+  return null;
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <LanguageProvider>
       <TooltipProvider>
         <div className="dark">
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <NotificationsProvider>
-            <Routes>
-              <Route path="/" element={<Splash />} />
-              <Route path="/welcome" element={<Welcome />} />
-              <Route path="/auth" element={<Auth />} />
-              <Route path="/onboarding" element={<Onboarding />} />
-              <Route path="/home" element={<Home />} />
-              <Route path="/for-you" element={<ForYou />} />
-              <Route path="/profile/:userId" element={<ProfileView />} />
-              <Route path="/match" element={<MatchScreen />} />
-              <Route path="/matches" element={<Matches />} />
-              <Route path="/chat/:matchId" element={<Chat />} />
-              <Route path="/settings" element={<Settings />} />
-              <Route path="/prime" element={<Prime />} />
-              <Route path="/my-profile" element={<MyProfile />} />
-              <Route path="/favorites" element={<Favorites />} />
-              <Route path="/terms" element={<Terms />} />
-              <Route path="/privacy" element={<Privacy />} />
-              <Route path="/community-guidelines" element={<CommunityGuidelines />} />
-              <Route path="/install" element={<Install />} />
-              
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-            <CookieConsent />
-          </NotificationsProvider>
-        </BrowserRouter>
-      </div>
-        </TooltipProvider>
-      </LanguageProvider>
-    </QueryClientProvider>
-  );
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <NotificationsProvider>
+              <Routes>
+                <Route path="/" element={<Splash />} />
+                <Route path="/welcome" element={<Welcome />} />
+                <Route path="/auth" element={<Auth />} />
+                <Route path="/onboarding" element={<Onboarding />} />
+                <Route path="/home" element={<Home />} />
+                <Route path="/for-you" element={<ForYou />} />
+                <Route path="/profile/:userId" element={<ProfileView />} />
+                <Route path="/match" element={<MatchScreen />} />
+                <Route path="/matches" element={<Matches />} />
+                <Route path="/chat/:matchId" element={<Chat />} />
+                <Route path="/settings" element={<Settings />} />
+                <Route path="/prime" element={<Prime />} />
+                <Route path="/my-profile" element={<MyProfile />} />
+                <Route path="/favorites" element={<Favorites />} />
+                <Route path="/terms" element={<Terms />} />
+                <Route path="/privacy" element={<Privacy />} />
+                <Route path="/community-guidelines" element={<CommunityGuidelines />} />
+                <Route path="/install" element={<Install />} />
+
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+              <GlobalLogic />
+              <CookieConsent />
+            </NotificationsProvider>
+          </BrowserRouter>
+        </div>
+      </TooltipProvider>
+    </LanguageProvider>
+  </QueryClientProvider>
+);
 
 export default App;
