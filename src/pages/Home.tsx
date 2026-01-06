@@ -110,7 +110,7 @@ const Home = () => {
     });
 
     return () => subscription.unsubscribe();
-  }, [navigate]);
+  }, [navigate, setUserCity, setIsPrime, setSearchPreference, track, trackPageView]);
 
   // ... (location effect remains same) ...
   useEffect(() => {

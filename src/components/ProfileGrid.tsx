@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import ProfileCard from "./ProfileCard";
 import { Loader2, Crown, Eye } from "lucide-react";
@@ -41,6 +41,35 @@ interface ModerationData {
   reportCounts: Map<string, number>;
   blockCounts: Map<string, number>;
 }
+
+// Check if profile qualifies for highlighting (Boost/NowPick/Prime + online)
+const isHighlightCandidate = (profile: Profile): { eligible: boolean; type: 'active' | 'featured' } => {
+  // Respect user's preference - if they disabled highlighting, skip them
+  if (profile.allow_highlight === false) {
+    return { eligible: false, type: 'active' };
+  }
+
+  const now = new Date();
+  const isNowPick = profile.nowpick_active_until && new Date(profile.nowpick_active_until) > now;
+  const isPrime = profile.is_prime;
+  const isOnline = profile.online_status;
+
+  // NowPick or Prime users get "Destacado"
+  if (isNowPick || isPrime) {
+    return { eligible: true, type: 'featured' };
+  }
+
+  // Online users with good engagement get "Activo ahora"
+  if (isOnline) {
+    const hasPhotos = profile.photos && profile.photos.length >= 2;
+    const hasDescription = !!profile.short_description;
+    if (hasPhotos && hasDescription) {
+      return { eligible: true, type: 'active' };
+    }
+  }
+
+  return { eligible: false, type: 'active' };
+};
 
 const ProfileGrid = ({ profiles, currentUserId, loadingMore, hasMore, onLoadMore, userLocation, isPrime, isLimitReached }: ProfileGridProps) => {
   const navigate = useNavigate();
@@ -105,7 +134,8 @@ const ProfileGrid = ({ profiles, currentUserId, loadingMore, hasMore, onLoadMore
   }, [currentUserId, profiles]);
 
   // Calculate quality score for a profile (local calculation)
-  const calculateLocalScore = (profile: Profile): number => {
+  // Calculate quality score for a profile (local calculation)
+  const calculateLocalScore = useCallback((profile: Profile): number => {
     let score = 100;
 
     const reportCount = moderationData.reportCounts.get(profile.user_id) || 0;
@@ -120,36 +150,9 @@ const ProfileGrid = ({ profiles, currentUserId, loadingMore, hasMore, onLoadMore
     if (profile.intention_tags && profile.intention_tags.length > 0) score += 5;
 
     return Math.max(0, Math.min(100, score));
-  };
+  }, [moderationData]);
 
-  // Check if profile qualifies for highlighting (Boost/NowPick/Prime + online)
-  const isHighlightCandidate = (profile: Profile): { eligible: boolean; type: 'active' | 'featured' } => {
-    // Respect user's preference - if they disabled highlighting, skip them
-    if (profile.allow_highlight === false) {
-      return { eligible: false, type: 'active' };
-    }
 
-    const now = new Date();
-    const isNowPick = profile.nowpick_active_until && new Date(profile.nowpick_active_until) > now;
-    const isPrime = profile.is_prime;
-    const isOnline = profile.online_status;
-
-    // NowPick or Prime users get "Destacado"
-    if (isNowPick || isPrime) {
-      return { eligible: true, type: 'featured' };
-    }
-
-    // Online users with good engagement get "Activo ahora"
-    if (isOnline) {
-      const hasPhotos = profile.photos && profile.photos.length >= 2;
-      const hasDescription = !!profile.short_description;
-      if (hasPhotos && hasDescription) {
-        return { eligible: true, type: 'active' };
-      }
-    }
-
-    return { eligible: false, type: 'active' };
-  };
 
   // Filter and sort profiles with moderation
   const moderatedProfiles = useMemo(() => {
@@ -180,7 +183,7 @@ const ProfileGrid = ({ profiles, currentUserId, loadingMore, hasMore, onLoadMore
 
         return 0;
       });
-  }, [profiles, moderationData]);
+  }, [profiles, moderationData, calculateLocalScore]);
 
   // Determine which profiles to highlight (max 2 per screen)
   const highlightedProfileIds = useMemo(() => {
