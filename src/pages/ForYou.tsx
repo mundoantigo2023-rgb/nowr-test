@@ -76,9 +76,9 @@ const getCtaCopy = (profile: CuratedProfile, language: string): string => {
     const langCopies = copies[language] || copies.es;
     return langCopies[Math.floor(Math.random() * langCopies.length)];
   }
-  return language === "es" ? "Ver perfil" : 
-         language === "pt" ? "Ver perfil" :
-         language === "fr" ? "Voir profil" : "View profile";
+  return language === "es" ? "Ver perfil" :
+    language === "pt" ? "Ver perfil" :
+      language === "fr" ? "Voir profil" : "View profile";
 };
 
 const ForYou = () => {
@@ -102,38 +102,38 @@ const ForYou = () => {
     const checkExpiredBoosts = () => {
       const now = new Date();
       setProfiles(currentProfiles => {
-        const expiredBoosted = currentProfiles.filter(profile => 
-          profile.isBoosted && 
-          profile.nowpick_active_until && 
+        const expiredBoosted = currentProfiles.filter(profile =>
+          profile.isBoosted &&
+          profile.nowpick_active_until &&
           new Date(profile.nowpick_active_until) <= now
         );
 
         const updatedProfiles = currentProfiles.map(profile => {
-          const stillBoosted = profile.nowpick_active_until && 
+          const stillBoosted = profile.nowpick_active_until &&
             new Date(profile.nowpick_active_until) > now;
-          
+
           return {
             ...profile,
             isBoosted: !!stillBoosted,
-            engagementScore: stillBoosted 
-              ? profile.engagementScore 
+            engagementScore: stillBoosted
+              ? profile.engagementScore
               : profile.engagementScore - 50
           };
         });
 
         const filteredProfiles = updatedProfiles.filter(p => p.engagementScore >= 25);
-        
+
         const removedCount = currentProfiles.length - filteredProfiles.length;
         if (removedCount > 0 && expiredBoosted.length > 0) {
           toast({
             title: "Boost expirado",
-            description: removedCount === 1 
+            description: removedCount === 1
               ? `${expiredBoosted[0]?.display_name} ya no está destacado`
               : `${removedCount} perfiles ya no están destacados`,
             duration: 4000,
           });
         }
-        
+
         return filteredProfiles;
       });
     };
@@ -151,7 +151,7 @@ const ForYou = () => {
             lng: position.coords.longitude,
           });
         },
-        () => {}
+        () => { }
       );
     }
   }, []);
@@ -206,9 +206,9 @@ const ForYou = () => {
     // Enrich with engagement data using weighted scoring
     const enrichedProfiles: CuratedProfile[] = await Promise.all(
       uniqueProfiles.map(async (profile) => {
-        const isBoosted = profile.nowpick_active_until && 
+        const isBoosted = profile.nowpick_active_until &&
           new Date(profile.nowpick_active_until) > now;
-        
+
         // Check activity status using presence system
         const presence = getPresenceInfo(profile.last_active, profile.online_status, profile.hide_activity_status || false);
         const isActiveNow = presence?.status === "online";
@@ -315,7 +315,7 @@ const ForYou = () => {
         .select("is_prime")
         .eq("user_id", session.user.id)
         .single();
-      
+
       const userIsPrime = profile?.is_prime || false;
       setIsPrime(userIsPrime);
 
@@ -323,13 +323,13 @@ const ForYou = () => {
 
       const curated = await fetchCuratedProfiles(session.user.id, userIsPrime);
       setProfiles(curated);
-      
+
       const hasBoosted = curated.some(p => p.isBoosted);
       if (hasBoosted && !hasBoostedProfilesRef.current) {
         hasBoostedProfilesRef.current = true;
         setTimeout(() => playNowPickSound(), 300);
       }
-      
+
       setLoading(false);
     };
 
@@ -342,18 +342,18 @@ const ForYou = () => {
     track("discovery_refreshed", { screen: "for_you" });
     const curated = await fetchCuratedProfiles(user.id, isPrime);
     setProfiles(curated);
-    
+
     const hasBoosted = curated.some(p => p.isBoosted);
     if (hasBoosted) {
       playNowPickSound();
     }
-    
+
     setRefreshing(false);
   };
 
   const handleProfileClick = (profile: CuratedProfile) => {
-    track("discovery_profile_clicked", { 
-      screen: "for_you", 
+    track("discovery_profile_clicked", {
+      screen: "for_you",
       profileId: profile.user_id,
       isBoosted: profile.isBoosted,
       isActiveNow: profile.isActiveNow,
@@ -390,7 +390,7 @@ const ForYou = () => {
           <div>
             <h1 className="text-xl font-display font-bold text-foreground">Para ti</h1>
             <p className="text-xs text-muted-foreground">
-              {profiles.filter(p => p.isActiveNow).length > 0 
+              {profiles.filter(p => p.isActiveNow).length > 0
                 ? `${profiles.filter(p => p.isActiveNow).length} activos ahora`
                 : "Perfiles con alta intención"
               }
@@ -446,22 +446,22 @@ const ForYou = () => {
             </Button>
           </div>
         ) : (
-          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-1.5 sm:gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 sm:gap-3">
             {profiles.map((profile, index) => (
               <div
                 key={profile.user_id}
                 onClick={() => handleProfileClick(profile)}
                 className={cn(
-                  "relative rounded-2xl overflow-hidden cursor-pointer group",
-                  "aspect-[3/4] bg-card border border-border/30",
-                  profile.isBoosted 
-                    ? "nowpick-boosted-card nowpick-border-animated" 
+                  "relative rounded-xl overflow-hidden cursor-pointer group",
+                  "aspect-[4/5] bg-card border border-border/30",
+                  profile.isBoosted
+                    ? "nowpick-boosted-card nowpick-border-animated"
                     : "foryou-card-enter",
                   profile.isBoosted && profile.isActiveNow && "ring-2 ring-online/70",
                   profile.isBoosted && !profile.isActiveNow && "ring-2 ring-primary/50",
                   profile.isBoosted && "foryou-shine-effect"
                 )}
-                style={{ 
+                style={{
                   animationDelay: profile.isBoosted ? '0s' : `${index * 0.08}s`,
                   animationFillMode: 'forwards'
                 }}
@@ -481,7 +481,7 @@ const ForYou = () => {
                   <div className="absolute inset-0 z-[1] pointer-events-none">
                     <div className={cn(
                       "absolute inset-0 bg-gradient-to-t",
-                      profile.isActiveNow 
+                      profile.isActiveNow
                         ? "from-online/30 via-online/10 to-transparent"
                         : "from-primary/40 via-primary/10 to-transparent"
                     )} />
@@ -489,9 +489,9 @@ const ForYou = () => {
                 )}
 
                 {/* Status badge */}
-                <div 
+                <div
                   className="absolute top-3 left-3 z-10"
-                  style={{ 
+                  style={{
                     animation: `foryou-card-enter 0.4s ease-out forwards`,
                     animationDelay: `${index * 0.08 + 0.3}s`,
                     opacity: 0
@@ -521,9 +521,9 @@ const ForYou = () => {
 
                 {/* Prime badge */}
                 {profile.is_prime && (
-                  <div 
+                  <div
                     className="absolute top-3 right-3 z-10"
-                    style={{ 
+                    style={{
                       animation: `foryou-card-enter 0.4s ease-out forwards`,
                       animationDelay: `${index * 0.08 + 0.35}s`,
                       opacity: 0
@@ -536,9 +536,9 @@ const ForYou = () => {
                 )}
 
                 {/* Profile info with presence */}
-                <div 
+                <div
                   className="absolute bottom-0 left-0 right-0 p-3 z-10"
-                  style={{ 
+                  style={{
                     animation: `foryou-card-enter 0.5s ease-out forwards`,
                     animationDelay: `${index * 0.08 + 0.2}s`,
                     opacity: 0
@@ -549,7 +549,7 @@ const ForYou = () => {
                       <p className="font-semibold text-white truncate text-base drop-shadow-lg">
                         {profile.display_name}, {profile.age}
                       </p>
-                      
+
                       {/* Presence indicator - Prime sees exact, Free sees generic */}
                       {!profile.hide_activity_status && (
                         <div className="mt-0.5">
@@ -612,7 +612,7 @@ const ForYou = () => {
         {/* Session limit notice */}
         {profiles.length > 0 && (
           <p className="text-center text-xs text-muted-foreground mt-6">
-            {profiles.filter(p => p.isActiveNow).length > 0 
+            {profiles.filter(p => p.isActiveNow).length > 0
               ? `${profiles.filter(p => p.isActiveNow).length} perfiles activos ahora • ${profiles.length} total`
               : `${profiles.length} perfiles seleccionados para ti`
             }
