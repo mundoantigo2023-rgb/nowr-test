@@ -172,19 +172,19 @@ const Auth = () => {
           });
         }
       } else {
-        // FALLBACK: Manually ensure profile exists if the trigger failed
         if (authData.user) {
+          // We use the state variables directly (displayName, age) which are guaranteed to be set
+          // by our validation logic above before this block runs.
           const { error: profileError } = await supabase.from("profiles").upsert({
             user_id: authData.user.id,
             display_name: displayName,
-            age: ageNum,
-            onboarding_completed: true, // Default to true since we removed the flow
+            age: parseInt(age), // Ensure it's a number
+            onboarding_completed: true,
             updated_at: new Date().toISOString(),
           }, { onConflict: 'user_id' });
 
           if (profileError) {
             console.error("Manual profile creation failed:", profileError);
-            // Continue anyway, as the trigger might have worked
           }
         }
 
