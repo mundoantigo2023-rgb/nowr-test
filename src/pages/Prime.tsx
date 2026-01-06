@@ -68,6 +68,48 @@ const Prime = () => {
     { icon: Sparkles, text: "Sin anuncios" },
   ];
 
+  const pricingPlans = [
+    {
+      id: "weekly",
+      title: "Semanal",
+      price: "4.99€",
+      period: "/semana",
+      savings: null,
+      popular: false,
+    },
+    {
+      id: "monthly",
+      title: "Mensual",
+      price: "14.99€",
+      period: "/mes",
+      savings: "Ahorra 25%",
+      popular: true,
+    },
+    {
+      id: "lifetime",
+      title: "De por vida",
+      price: "99.99€",
+      period: "una vez",
+      savings: "Mejor valor",
+      popular: false,
+    },
+  ];
+
+  const handleSubscribe = async (planId: string) => {
+    setLoading(true);
+    // Simulate API call
+    setTimeout(() => {
+      setLoading(false);
+      toast({
+        title: "Suscripción iniciada",
+        description: "En un entorno real, esto abriría la pasarela de pago.",
+      });
+      // For demo purposes, we could toggle Prime here if we had a backend endpoint for it,
+      // but usually this is handled by webhooks.
+      // We'll just show the toast for now.
+    }, 1500);
+  };
+
 
 
   return (
@@ -129,27 +171,67 @@ const Prime = () => {
           </div>
         )}
 
-        {/* Prime Coming Soon / Paused State */}
-        <Card className="border-prime/30 bg-gradient-to-br from-prime/10 to-transparent">
-          <CardContent className="p-8 text-center space-y-4">
-            <div className="w-16 h-16 rounded-full bg-secondary/50 flex items-center justify-center mx-auto">
-              <Clock className="h-8 w-8 text-muted-foreground" />
-            </div>
-            <div>
-              <h3 className="text-xl font-bold text-foreground">Próximamente</h3>
-              <p className="text-muted-foreground mt-2 max-w-xs mx-auto">
-                Estamos actualizando las suscripciones Prime para ofrecerte una mejor experiencia.
+        {/* Pricing Cards */}
+        {!isPrime && (
+          <div className="grid gap-4 mt-8 animate-fade-in" style={{ animationDelay: "0.2s" }}>
+            {pricingPlans.map((plan) => (
+              <Card
+                key={plan.id}
+                className={`relative overflow-hidden border-2 transition-all duration-300 cursor-pointer hover:scale-[1.02] ${plan.popular
+                    ? "border-prime bg-prime/5 shadow-[0_0_20px_hsl(var(--prime)/0.15)]"
+                    : "border-border bg-card/50 hover:border-prime/50"
+                  }`}
+                onClick={() => handleSubscribe(plan.id)}
+              >
+                {plan.popular && (
+                  <div className="absolute top-0 right-0 bg-prime text-prime-foreground text-xs font-bold px-3 py-1 rounded-bl-xl shadow-lg">
+                    POPULAR
+                  </div>
+                )}
+                {plan.savings && !plan.popular && (
+                  <div className="absolute top-0 right-0 bg-secondary text-secondary-foreground text-xs font-bold px-3 py-1 rounded-bl-xl">
+                    {plan.savings}
+                  </div>
+                )}
+
+                <CardContent className="p-5 flex items-center justify-between">
+                  <div>
+                    <h3 className={`font-bold ${plan.popular ? "text-prime" : "text-foreground"}`}>
+                      {plan.title}
+                    </h3>
+                    <div className="flex items-baseline gap-1 mt-1">
+                      <span className="text-2xl font-bold">{plan.price}</span>
+                      <span className="text-sm text-muted-foreground">{plan.period}</span>
+                    </div>
+                  </div>
+
+                  <div className={`h-8 w-8 rounded-full border-2 flex items-center justify-center ${plan.popular ? "border-prime bg-prime text-prime-foreground" : "border-muted-foreground/30 text-transparent"
+                    }`}>
+                    {plan.popular && <Crown className="h-4 w-4 fill-current" />}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+
+            <div className="pt-4 text-center space-y-4">
+              <Button
+                onClick={() => handleSubscribe("monthly")}
+                className="w-full h-14 text-lg font-bold bg-gradient-to-r from-prime to-prime-deep hover:from-prime-glow hover:to-prime text-prime-foreground shadow-[0_8px_30px_hsl(var(--prime)/0.3)] transition-all hover:scale-[1.02] active:scale-[0.98]"
+              >
+                Obtener Prime
+              </Button>
+
+              <div className="flex items-center justify-center gap-6 text-sm text-muted-foreground">
+                <button className="hover:text-foreground transition-colors">Restaurar compras</button>
+                <button className="hover:text-foreground transition-colors">Términos</button>
+              </div>
+
+              <p className="text-xs text-muted-foreground/60 px-4">
+                El pago se cargará a su cuenta al confirmar la compra. La suscripción se renueva automáticamente.
               </p>
             </div>
-            <Button
-              variant="outline"
-              disabled
-              className="mt-4 border-prime/30 text-prime opacity-50"
-            >
-              Suscripciones Pausadas
-            </Button>
-          </CardContent>
-        </Card>
+          </div>
+        )}
 
 
 
