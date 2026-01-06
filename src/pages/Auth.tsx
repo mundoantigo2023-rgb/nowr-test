@@ -47,10 +47,15 @@ const Auth = () => {
 
   useEffect(() => {
     // Check for existing session first
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session?.user) {
-        const onboardingComplete = localStorage.getItem("nowr_onboarding_complete");
-        if (onboardingComplete) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("onboarding_completed")
+          .eq("user_id", session.user.id)
+          .single<any>();
+
+        if (profile && profile.onboarding_completed) {
           navigate("/home", { replace: true });
         } else {
           navigate("/onboarding", { replace: true });
@@ -59,11 +64,17 @@ const Auth = () => {
     });
 
     // Then listen for auth state changes (login/signup events)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       // Only redirect on actual sign-in events, not on initial session check
       if (event === "SIGNED_IN" && session?.user) {
-        const onboardingComplete = localStorage.getItem("nowr_onboarding_complete");
-        if (onboardingComplete) {
+        // Fetch profile to check onboarding status
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("onboarding_completed")
+          .eq("user_id", session.user.id)
+          .single();
+
+        if (profile && profile.onboarding_completed) {
           navigate("/home", { replace: true });
         } else {
           navigate("/onboarding", { replace: true });
@@ -95,8 +106,8 @@ const Auth = () => {
       if (error) {
         toast({
           title: t("error"),
-          description: error.message === "Invalid login credentials" 
-            ? t("invalidCredentials") 
+          description: error.message === "Invalid login credentials"
+            ? t("invalidCredentials")
             : error.message,
           variant: "destructive",
         });
@@ -215,19 +226,19 @@ const Auth = () => {
           <div className="prose prose-sm text-muted-foreground space-y-4">
             <h2 className="text-lg font-semibold text-foreground">1. Aceptación de términos</h2>
             <p>Al acceder y utilizar NOWR, aceptas cumplir con estos términos y condiciones. Esta plataforma está diseñada exclusivamente para adultos mayores de 18 años.</p>
-            
+
             <h2 className="text-lg font-semibold text-foreground">2. Uso de la plataforma</h2>
             <p>NOWR es una plataforma de conexión entre adultos. Los usuarios son responsables de su comportamiento y de las interacciones que realicen. Cualquier actividad fuera de la plataforma es responsabilidad exclusiva de los usuarios involucrados.</p>
-            
+
             <h2 className="text-lg font-semibold text-foreground">3. Privacidad y datos</h2>
             <p>Respetamos tu privacidad. Los datos personales se utilizan únicamente para el funcionamiento de la plataforma. No compartimos información personal con terceros sin consentimiento.</p>
-            
+
             <h2 className="text-lg font-semibold text-foreground">4. Comportamiento prohibido</h2>
             <p>Está prohibido: compartir contenido ilegal, acosar a otros usuarios, crear perfiles falsos, o cualquier actividad que viole las leyes aplicables.</p>
-            
+
             <h2 className="text-lg font-semibold text-foreground">5. Responsabilidad</h2>
             <p>NOWR no se hace responsable de las interacciones entre usuarios fuera de la plataforma. Los usuarios asumen toda responsabilidad por sus acciones y encuentros.</p>
-            
+
             <h2 className="text-lg font-semibold text-foreground">6. Consentimiento</h2>
             <p>Cualquier interacción entre usuarios debe basarse en el consentimiento mutuo. El respeto es fundamental en nuestra comunidad.</p>
           </div>

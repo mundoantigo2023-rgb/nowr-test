@@ -240,8 +240,8 @@ const ProfileGrid = ({ profiles, currentUserId, loadingMore, hasMore, onLoadMore
 
   return (
     <>
-      {/* Responsive grid: 3 cols on mobile, 5-7 cols on desktop */}
-      <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-1.5 sm:gap-2">
+      {/* Responsive grid: 2 cols on mobile, 3-4 cols on desktop */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3">
         {moderatedProfiles.map((profile, index) => {
           const highlightType = highlightedProfileIds.get(profile.user_id);
           const isHighlighted = !!highlightType;

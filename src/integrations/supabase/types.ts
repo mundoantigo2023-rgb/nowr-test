@@ -316,6 +316,7 @@ export type Database = {
         longitude: number | null
         nowpick_active_until: string | null
         nowpick_last_used: string | null
+        onboarding_completed: boolean | null
         online_status: boolean | null
         photos: string[]
         private_photos: string[] | null
@@ -340,6 +341,7 @@ export type Database = {
         longitude?: number | null
         nowpick_active_until?: string | null
         nowpick_last_used?: string | null
+        onboarding_completed?: boolean | null
         online_status?: boolean | null
         photos?: string[]
         private_photos?: string[] | null
@@ -364,6 +366,7 @@ export type Database = {
         longitude?: number | null
         nowpick_active_until?: string | null
         nowpick_last_used?: string | null
+        onboarding_completed?: boolean | null
         online_status?: boolean | null
         photos?: string[]
         private_photos?: string[] | null

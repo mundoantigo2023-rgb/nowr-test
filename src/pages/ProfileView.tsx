@@ -61,6 +61,7 @@ interface Profile {
   invisible_mode: boolean | null;
   hide_activity_status: boolean | null;
   show_age: boolean | null;
+  private_photos: string[] | null;
 }
 
 // Haversine formula to calculate distance between two coordinates
@@ -240,8 +241,8 @@ const ProfileView = () => {
     setSendingInterest(true);
 
     try {
-      await supabase
-        .from("interests")
+      await (supabase
+        .from("interests") as any)
         .insert({ from_user_id: currentUserId, to_user_id: userId });
 
       const { data: mutualInterest } = await supabase
@@ -252,8 +253,8 @@ const ProfileView = () => {
         .maybeSingle();
 
       if (mutualInterest) {
-        await supabase
-          .from("matches")
+        await (supabase
+          .from("matches") as any)
           .insert({ user1_id: currentUserId, user2_id: userId });
 
         setIsMatched(true);
@@ -281,8 +282,8 @@ const ProfileView = () => {
     if (!currentUserId || !userId) return;
 
     try {
-      await supabase
-        .from("blocks")
+      await (supabase
+        .from("blocks") as any)
         .insert({ blocker_id: currentUserId, blocked_id: userId });
 
       toast({
@@ -299,7 +300,7 @@ const ProfileView = () => {
     if (!currentUserId || !userId || !reportReason) return;
 
     try {
-      await supabase.from("reports").insert({
+      await (supabase.from("reports") as any).insert({
         reporter_id: currentUserId,
         reported_id: userId,
         reason: reportReason,
@@ -564,6 +565,46 @@ const ProfileView = () => {
                       <img src={photo} alt="" className="w-full h-full object-cover" />
                     </button>
                   ))}
+                </div>
+              </div>
+            )}
+
+
+            {/* Private Photos Section - Prime Feature */}
+            {profile.is_prime && profile.private_photos && profile.private_photos.length > 0 && (
+              <div className="pt-4 pb-2">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+                    <Lock className="w-3 h-3" />
+                    GALERÍA PRIVADA ({profile.private_photos.length})
+                  </h3>
+                  {!currentUserIsPrime && (
+                    <span className="text-[10px] bg-prime/20 text-prime px-2 py-0.5 rounded-full font-bold uppercase border border-prime/30">
+                      Prime
+                    </span>
+                  )}
+                </div>
+
+                <div className="relative overflow-hidden rounded-xl aspect-[3/2] bg-secondary/50 group cursor-pointer border border-border/50">
+                  {/* Blur Overlay if not authorized - Simplified logic here, assuming typical access control */}
+                  <div className="absolute inset-0 backdrop-blur-xl bg-black/40 flex flex-col items-center justify-center p-6 text-center z-10">
+                    <div className="w-12 h-12 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                      <Lock className="w-6 h-6 text-white" />
+                    </div>
+                    <h4 className="text-white font-bold text-sm mb-1">Fotos Privadas</h4>
+                    <p className="text-white/70 text-xs">
+                      {currentUserIsPrime
+                        ? "Solicita acceso para ver"
+                        : "Mejora a Prime para solicitar acceso"}
+                    </p>
+                  </div>
+
+                  {/* Background placeholder (first private photo blurred) */}
+                  <img
+                    src={profile.private_photos[0]}
+                    alt="Private content"
+                    className="w-full h-full object-cover opacity-50 blur-lg"
+                  />
                 </div>
               </div>
             )}
