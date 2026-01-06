@@ -32,7 +32,7 @@ interface Profile {
   nowpick_active_until: string | null;
   nowpick_last_used: string | null;
   search_preference: string | null;
-  visible_gender: string | null;
+  show_age: boolean | null;
 }
 
 type SearchPreference = "men" | "women" | "both";
@@ -52,16 +52,17 @@ const MyProfile = () => {
   const [availability, setAvailability] = useState("solo_explorando");
   const [lookingFor, setLookingFor] = useState<string[]>([]);
   const [invisibleMode, setInvisibleMode] = useState(false);
+  const [showAge, setShowAge] = useState(true);
   const [privatePhotos, setPrivatePhotos] = useState<string[]>([]);
   const [detectedCity, setDetectedCity] = useState<string | null>(null);
   const [detectingLocation, setDetectingLocation] = useState(false);
   const [isPrime, setIsPrime] = useState(false);
   const [searchPreference, setSearchPreference] = useState<SearchPreference | null>(null);
   const [visibleGender, setVisibleGender] = useState<VisibleGender | null>(null);
-  
+
   // Profile visitors hook - Prime only
   const { visitors, loading: visitorsLoading, unreadCount } = useProfileVisitors(user?.id, isPrime);
-  
+
   // Original values to track changes
   const [originalValues, setOriginalValues] = useState<{
     displayName: string;
@@ -69,6 +70,7 @@ const MyProfile = () => {
     availability: string;
     lookingFor: string[];
     invisibleMode: boolean;
+    showAge: boolean;
   } | null>(null);
 
   // Check if there are unsaved changes
@@ -77,7 +79,8 @@ const MyProfile = () => {
     description !== originalValues.description ||
     availability !== originalValues.availability ||
     JSON.stringify(lookingFor.sort()) !== JSON.stringify(originalValues.lookingFor.sort()) ||
-    invisibleMode !== originalValues.invisibleMode
+    invisibleMode !== originalValues.invisibleMode ||
+    showAge !== originalValues.showAge
   );
 
   useEffect(() => {
@@ -109,7 +112,7 @@ const MyProfile = () => {
     try {
       const { data, error } = await supabase
         .from("profiles")
-        .select("display_name, short_description, photos, intention_tags, city, is_prime, invisible_mode, private_photos, nowpick_active_until, nowpick_last_used, search_preference, visible_gender")
+        .select("display_name, short_description, photos, intention_tags, city, is_prime, invisible_mode, private_photos, nowpick_active_until, nowpick_last_used, search_preference, visible_gender, show_age")
         .eq("user_id", user?.id)
         .single();
 
@@ -120,25 +123,26 @@ const MyProfile = () => {
       setDescription(data.short_description || "");
       setPhotos(data.photos || []);
       setInvisibleMode(data.invisible_mode || false);
+      setShowAge(data.show_age !== false); // Default true if null/undefined
       setPrivatePhotos(data.private_photos || []);
       setDetectedCity(data.city || null);
       setIsPrime(data.is_prime || false);
       setSearchPreference(data.search_preference as SearchPreference || null);
       setVisibleGender(data.visible_gender as VisibleGender || null);
-      
+
       // Parse intention tags
       const tags = data.intention_tags || [];
-      const availabilityTag = tags.find((t: string) => 
+      const availabilityTag = tags.find((t: string) =>
         AVAILABILITY_OPTIONS.some(opt => opt.id === t)
       );
       const parsedAvailability = availabilityTag || "solo_explorando";
       setAvailability(parsedAvailability);
-      
-      const interestTags = tags.filter((t: string) => 
+
+      const interestTags = tags.filter((t: string) =>
         INTEREST_OPTIONS.some(opt => opt.id === t)
       );
       setLookingFor(interestTags);
-      
+
       // Store original values to track changes
       setOriginalValues({
         displayName: data.display_name || "",
@@ -146,6 +150,7 @@ const MyProfile = () => {
         availability: parsedAvailability,
         lookingFor: interestTags,
         invisibleMode: data.invisible_mode || false,
+        showAge: data.show_age !== false,
       });
     } catch (error) {
       console.error("Error fetching profile:", error);
@@ -183,12 +188,12 @@ const MyProfile = () => {
       if (!response.ok) throw new Error('Geocoding failed');
 
       const data = await response.json();
-      const city = data.address?.city || 
-                   data.address?.town || 
-                   data.address?.village || 
-                   data.address?.municipality ||
-                   data.address?.county ||
-                   null;
+      const city = data.address?.city ||
+        data.address?.town ||
+        data.address?.village ||
+        data.address?.municipality ||
+        data.address?.county ||
+        null;
 
       if (city) {
         setDetectedCity(city);
@@ -217,7 +222,7 @@ const MyProfile = () => {
     setSaving(true);
     try {
       const intentionTags = [availability, ...lookingFor];
-      
+
       const { error } = await supabase
         .from("profiles")
         .update({
@@ -234,7 +239,7 @@ const MyProfile = () => {
         title: t("profileUpdated"),
         description: t("changesSaved"),
       });
-      
+
       // Update original values after successful save
       setOriginalValues({
         displayName,
@@ -256,8 +261,8 @@ const MyProfile = () => {
   };
 
   const toggleLookingFor = (value: string) => {
-    setLookingFor(prev => 
-      prev.includes(value) 
+    setLookingFor(prev =>
+      prev.includes(value)
         ? prev.filter(v => v !== value)
         : [...prev, value]
     );
@@ -307,14 +312,14 @@ const MyProfile = () => {
         {isPrime && (
           <Card className="border-prime/30 bg-prime/5">
             <CardContent className="p-4">
-              <ProfileVisitors 
-                visitors={visitors} 
-                loading={visitorsLoading} 
+              <ProfileVisitors
+                visitors={visitors}
+                loading={visitorsLoading}
               />
             </CardContent>
           </Card>
         )}
-        
+
         {/* Photos Manager */}
         {user && (
           <ProfilePhotoManager
@@ -402,11 +407,10 @@ const MyProfile = () => {
                 <button
                   key={option.id}
                   onClick={() => setAvailability(option.id)}
-                  className={`px-4 py-2 rounded-full text-sm font-medium transition-all border ${
-                    availability === option.id
+                  className={`px-4 py-2 rounded-full text-sm font-medium transition-all border ${availability === option.id
                       ? "bg-primary text-primary-foreground border-primary"
                       : "bg-transparent text-muted-foreground border-border hover:border-primary/50"
-                  }`}
+                    }`}
                 >
                   {option.label}
                 </button>
@@ -424,11 +428,10 @@ const MyProfile = () => {
                 <button
                   key={option.id}
                   onClick={() => toggleLookingFor(option.id)}
-                  className={`px-4 py-2 rounded-full text-sm font-medium transition-all border ${
-                    lookingFor.includes(option.id)
+                  className={`px-4 py-2 rounded-full text-sm font-medium transition-all border ${lookingFor.includes(option.id)
                       ? "bg-primary text-primary-foreground border-primary"
                       : "bg-transparent text-muted-foreground border-border hover:border-primary/50"
-                  }`}
+                    }`}
                 >
                   {option.label}
                 </button>
@@ -444,7 +447,7 @@ const MyProfile = () => {
             <p className="text-xs text-muted-foreground -mt-2">
               {t("searchPreferencesDesc")}
             </p>
-            
+
             {/* What you're looking for */}
             <div className="space-y-2">
               <span className="text-sm text-muted-foreground">{t("lookingFor")}</span>
@@ -463,11 +466,10 @@ const MyProfile = () => {
                         toast({ title: t("preferenceUpdated") });
                       }
                     }}
-                    className={`px-4 py-2 rounded-full text-sm font-medium transition-all border ${
-                      searchPreference === option.id
+                    className={`px-4 py-2 rounded-full text-sm font-medium transition-all border ${searchPreference === option.id
                         ? "bg-primary text-primary-foreground border-primary"
                         : "bg-transparent text-muted-foreground border-border hover:border-primary/50"
-                    }`}
+                      }`}
                   >
                     {option.label}
                   </button>
@@ -492,11 +494,10 @@ const MyProfile = () => {
                         toast({ title: t("preferenceUpdated") });
                       }
                     }}
-                    className={`px-4 py-2 rounded-full text-sm font-medium transition-all border ${
-                      visibleGender === option.id
+                    className={`px-4 py-2 rounded-full text-sm font-medium transition-all border ${visibleGender === option.id
                         ? "bg-primary text-primary-foreground border-primary"
                         : "bg-transparent text-muted-foreground border-border hover:border-primary/50"
-                    }`}
+                      }`}
                   >
                     {option.label}
                   </button>

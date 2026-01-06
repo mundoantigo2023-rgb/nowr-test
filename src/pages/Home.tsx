@@ -213,11 +213,20 @@ const Home = () => {
 
     // 3. SEGMENTATION (For You vs Regular)
     // "For You" = Top profiles (Boosted or highly compatible/popular)
-    // Simplification: Take top 6 profiles as "For You" if they meet criteria (e.g. Boosted or Online)
-    // User requested "For You" section at top.
-
+    // Simplification: Take top 6 profiles as "For You" if they meet criteria (Prime or Boosted)
     const forYouCandidates = result.filter(p => (p.nowpick_active_until && new Date(p.nowpick_active_until) > new Date()) || p.is_prime);
-    const forYou = forYouCandidates.slice(0, 6); // Max 6-9
+
+    // Sort "For You" by boost status/Prime to ensure quality
+    forYouCandidates.sort((a, b) => {
+      // Boosted first
+      const aBoost = a.nowpick_active_until && new Date(a.nowpick_active_until) > new Date();
+      const bBoost = b.nowpick_active_until && new Date(b.nowpick_active_until) > new Date();
+      if (aBoost && !bBoost) return -1;
+      if (!aBoost && bBoost) return 1;
+      return 0;
+    });
+
+    const forYou = forYouCandidates.slice(0, 6); // Keep limited number
 
     // Remove For You items from Regular list to avoid duplication
     const forYouIds = new Set(forYou.map(p => p.user_id));
@@ -303,17 +312,18 @@ const Home = () => {
               <span className="px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-500 text-[10px] font-bold border border-amber-500/20 shadow-sm">DESTACADOS</span>
             </div>
 
-            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-1.5 sm:gap-2">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 px-2">
               {forYouProfiles.map((profile, i) => (
                 <div key={profile.user_id} style={{ animationDelay: `${i * 0.1}s` }} className="animate-in fade-in zoom-in-95 duration-300">
                   <ProfileCard
                     profile={profile}
                     onClick={() => navigate(`/profile/${profile.user_id}`)}
-                    compact={true}
+                    compact={false}
                     userLocation={userLocation}
                     variant="forYou"
                     hideDistance={true}
                     viewerIsPrime={isPrime}
+                    className="max-w-[320px] mx-auto md:max-w-none md:mx-0 w-full aspect-[4/5] md:aspect-video lg:aspect-[3/1]"
                   />
                 </div>
               ))}

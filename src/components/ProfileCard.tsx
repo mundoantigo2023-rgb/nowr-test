@@ -30,6 +30,7 @@ interface ProfileCardProps {
   viewerIsPrime?: boolean; // Whether the viewer is Prime (can see exact times)
   hideDistance?: boolean; // New prop to hide distance on grid
   variant?: 'default' | 'forYou'; // Variant for different visual styles
+  className?: string;
 }
 
 // Calculate distance between two points using Haversine formula
@@ -71,7 +72,7 @@ const getDistanceColor = (km: number): { bg: string; text: string; icon: string 
   }
 };
 
-const ProfileCard = ({ profile, onClick, compact = false, userLocation, isHighlighted = false, highlightType, viewerIsPrime = false, hideDistance = false, variant = 'default' }: ProfileCardProps) => {
+const ProfileCard = ({ profile, onClick, compact = false, userLocation, isHighlighted = false, highlightType, viewerIsPrime = false, hideDistance = false, variant = 'default', className }: ProfileCardProps) => {
   const [isHovered, setIsHovered] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
 
@@ -115,7 +116,8 @@ const ProfileCard = ({ profile, onClick, compact = false, userLocation, isHighli
         compact ? "aspect-[4/5]" : "aspect-[4/5]", // Enforce 4:5 everywhere for consistency
         isNowPick && "ring-2 ring-primary nowpick-card-glow",
         variant === 'forYou' && "ring-2 ring-brand-gradient shadow-[0_0_15px_rgba(255,215,0,0.3)]", // Gold/Brand glow for For You
-        isHighlighted && variant !== 'forYou' && "explore-highlight-glow"
+        isHighlighted && variant !== 'forYou' && "explore-highlight-glow",
+        className
       )}
     >
       {/* Skeleton loader */}

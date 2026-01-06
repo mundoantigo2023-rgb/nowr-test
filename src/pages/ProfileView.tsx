@@ -60,6 +60,7 @@ interface Profile {
   last_active: string | null;
   invisible_mode: boolean | null;
   hide_activity_status: boolean | null;
+  show_age: boolean | null;
 }
 
 // Haversine formula to calculate distance between two coordinates
@@ -424,9 +425,9 @@ const ProfileView = () => {
           </DropdownMenu>
         </div>
 
-        <div className="px-4 max-w-md mx-auto relative">
-          {/* PROFILE PHOTO - 4:5 Ratio, Centered */}
-          <div className="relative w-full aspect-[4/5] max-h-[55vh] mx-auto rounded-3xl overflow-hidden shadow-sm bg-secondary/30 touch-pan-y">
+        <div className="px-4 max-w-lg mx-auto relative">
+          {/* PROFILE PHOTO - Refactored Layout: Max 40-50% Viewport */}
+          <div className="relative w-full aspect-[4/5] max-h-[45vh] md:max-h-[50vh] mx-auto rounded-3xl overflow-hidden shadow-sm bg-secondary/30 touch-pan-y transition-all">
             {/* Photo Carousel */}
             <img
               src={photos[currentPhoto]}
@@ -474,20 +475,22 @@ const ProfileView = () => {
             </Button>
           </div>
 
-          {/* PROFILE INFO */}
-          <div className="mt-4 space-y-3">
-            {/* Header: Name & Age */}
+          {/* PROFILE INFO - Organized Below */}
+          <div className="mt-5 space-y-4 pb-8">
+            {/* Header: Name & Age (Check show_age preference) */}
             <div className="flex items-center justify-between">
-              <h1 className="text-2xl font-bold flex items-center gap-2 text-foreground">
+              <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-2 text-foreground">
                 {profile.display_name}
-                <span className="text-2xl font-normal text-muted-foreground">{profile.age}</span>
-                {profile.is_prime && <Crown className="w-5 h-5 text-prime animate-prime-shimmer ml-1" />}
+                {(profile.show_age !== false) && (
+                  <span className="text-2xl md:text-3xl font-normal text-muted-foreground">{profile.age}</span>
+                )}
+                {profile.is_prime && <Crown className="w-6 h-6 text-prime animate-prime-shimmer ml-1" />}
               </h1>
             </div>
 
-            {/* Status & Location (Always Visible) */}
-            <div className="border-b border-border pb-3 space-y-3">
-              <div className="flex items-center gap-2 text-sm font-medium text-foreground/90">
+            {/* Status & Location */}
+            <div className="border-b border-border pb-4 space-y-3">
+              <div className="flex items-center gap-2 text-sm md:text-base font-medium text-foreground/90">
                 {profile.online_status ? (
                   <>
                     <span className="w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.5)]" />
@@ -501,9 +504,9 @@ const ProfileView = () => {
                 )}
               </div>
 
-              {/* Location Info (Always Visible) */}
-              <div className="grid transition-all duration-300 ease-out overflow-hidden mt-1 pl-4 border-l-2 border-border/50">
-                <div className="flex flex-col gap-2">
+              {/* Location Info */}
+              <div className="grid transition-all duration-300 ease-out overflow-hidden mt-1 pl-3 border-l-2 border-primary/20">
+                <div className="flex flex-col gap-1.5">
                   {distance !== null && (
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <MapPin className="w-4 h-4" />
@@ -522,9 +525,9 @@ const ProfileView = () => {
 
             {/* Bio / Description */}
             {profile.short_description && (
-              <div className="pt-2">
-                <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1">SOBRE MÍ</h3>
-                <p className="text-base leading-relaxed text-foreground whitespace-pre-wrap">
+              <div className="pt-1">
+                <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">SOBRE MÍ</h3>
+                <p className="text-base md:text-lg leading-relaxed text-foreground whitespace-pre-wrap">
                   {profile.short_description}
                 </p>
               </div>
@@ -533,9 +536,10 @@ const ProfileView = () => {
             {/* Interests / Tags */}
             {profile.intention_tags && profile.intention_tags.length > 0 && (
               <div className="pt-2">
+                <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">INTERESES</h3>
                 <div className="flex flex-wrap gap-2">
                   {profile.intention_tags.map((tag, i) => (
-                    <span key={i} className="px-3 py-1.5 bg-secondary/50 rounded-lg text-sm font-medium border border-border/50">
+                    <span key={i} className="px-3 py-1.5 bg-secondary/60 hover:bg-secondary rounded-full text-sm font-medium border border-border/50 text-foreground/90 transition-colors">
                       {getTagLabel(tag)}
                     </span>
                   ))}
@@ -546,15 +550,15 @@ const ProfileView = () => {
             {/* Gallery Thumbnails if > 1 */}
             {photos.length > 1 && (
               <div className="pt-4">
-                <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">GALERÍA</h3>
-                <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+                <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3">GALERÍA</h3>
+                <div className="flex gap-2 overflow-x-auto pb-4 scrollbar-hide">
                   {photos.map((photo, idx) => (
                     <button
                       key={idx}
                       onClick={() => setCurrentPhoto(idx)}
                       className={cn(
-                        "relative w-20 h-20 flex-shrink-0 rounded-xl overflow-hidden border-2 transition-all",
-                        currentPhoto === idx ? "border-primary" : "border-transparent opacity-70"
+                        "relative w-20 h-20 md:w-24 md:h-24 flex-shrink-0 rounded-2xl overflow-hidden border-2 transition-all shadow-sm",
+                        currentPhoto === idx ? "border-primary scale-105" : "border-transparent opacity-70 hover:opacity-100"
                       )}
                     >
                       <img src={photo} alt="" className="w-full h-full object-cover" />
@@ -569,10 +573,10 @@ const ProfileView = () => {
       </main>
 
       {/* Sticky Bottom Actions */}
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/90 backdrop-blur-xl border-t border-border z-50">
+      <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/95 backdrop-blur-xl border-t border-border z-50 safe-area-bottom">
         <div className="max-w-md mx-auto grid grid-cols-5 gap-3">
           {/* Secondary Actions */}
-          <Button variant="outline" size="icon" className="h-12 w-12 rounded-full" onClick={handleBlock}>
+          <Button variant="outline" size="icon" className="h-12 w-12 rounded-full border-2 hover:bg-secondary" onClick={handleBlock}>
             <Ban className="h-5 w-5 text-muted-foreground" />
           </Button>
 
@@ -588,7 +592,7 @@ const ProfileView = () => {
           ) : (
             <Button
               className={cn(
-                "col-span-3 h-12 rounded-full text-base font-bold shadow-lg transition-all",
+                "col-span-3 h-12 rounded-full text-base font-bold shadow-lg transition-all active:scale-95",
                 hasInterest ? "bg-secondary text-secondary-foreground" : "bg-primary text-primary-foreground shadow-primary/20"
               )}
               onClick={handleSendInterest}
@@ -600,7 +604,7 @@ const ProfileView = () => {
           )}
 
           {/* Report Action */}
-          <Button variant="outline" size="icon" className="h-12 w-12 rounded-full" onClick={() => setShowReportDialog(true)}>
+          <Button variant="outline" size="icon" className="h-12 w-12 rounded-full border-2 hover:bg-secondary" onClick={() => setShowReportDialog(true)}>
             <Flag className="h-5 w-5 text-muted-foreground" />
           </Button>
         </div>
