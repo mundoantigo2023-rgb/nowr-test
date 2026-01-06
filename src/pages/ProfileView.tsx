@@ -13,7 +13,6 @@ import {
   Ban,
   MessageCircle,
   Flame,
-  ChevronDown,
   Maximize2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -479,19 +478,16 @@ const ProfileView = () => {
           <div className="mt-4 space-y-3">
             {/* Header: Name & Age */}
             <div className="flex items-center justify-between">
-              <h1 className="text-2xl font-bold flex items-center gap-2">
+              <h1 className="text-2xl font-bold flex items-center gap-2 text-foreground">
                 {profile.display_name}
                 <span className="text-2xl font-normal text-muted-foreground">{profile.age}</span>
                 {profile.is_prime && <Crown className="w-5 h-5 text-prime animate-prime-shimmer ml-1" />}
               </h1>
             </div>
 
-            {/* Status Accordion (Expandable) */}
-            <div className="border-b border-border pb-3">
-              <button
-                onClick={() => setShowFullBio(!showFullBio)} // Reusing this state for the accordion for now, or clearer naming
-                className="flex items-center gap-2 text-sm font-medium text-foreground/90 hover:opacity-80 transition-opacity"
-              >
+            {/* Status & Location (Always Visible) */}
+            <div className="border-b border-border pb-3 space-y-3">
+              <div className="flex items-center gap-2 text-sm font-medium text-foreground/90">
                 {profile.online_status ? (
                   <>
                     <span className="w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.5)]" />
@@ -500,18 +496,14 @@ const ProfileView = () => {
                 ) : (
                   <>
                     <span className="w-2.5 h-2.5 bg-gray-400 rounded-full" />
-                    {profile.last_active ? `Activo ${new Date(profile.last_active).toLocaleDateString()}` : "Desconectado"}
+                    {profile.last_active ? "Recientemente activo" : "Desconectado"}
                   </>
                 )}
-                <ChevronDown className={cn("w-4 h-4 text-muted-foreground transition-transform", showFullBio && "rotate-180")} />
-              </button>
+              </div>
 
-              {/* Expanded Details */}
-              <div className={cn(
-                "grid transition-all duration-300 ease-out overflow-hidden",
-                showFullBio ? "grid-rows-[1fr] opacity-100 mt-3" : "grid-rows-[0fr] opacity-0"
-              )}>
-                <div className="min-h-0 flex flex-col gap-2 pl-4 border-l-2 border-border/50">
+              {/* Location Info (Always Visible) */}
+              <div className="grid transition-all duration-300 ease-out overflow-hidden mt-1 pl-4 border-l-2 border-border/50">
+                <div className="flex flex-col gap-2">
                   {distance !== null && (
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <MapPin className="w-4 h-4" />
