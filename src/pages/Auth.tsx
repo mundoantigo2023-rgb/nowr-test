@@ -145,7 +145,7 @@ const Auth = () => {
         return;
       }
 
-      const { error } = await supabase.auth.signUp({
+      const { data: authData, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -172,6 +172,22 @@ const Auth = () => {
           });
         }
       } else {
+        // FALLBACK: Manually ensure profile exists if the trigger failed
+        if (authData.user) {
+          const { error: profileError } = await supabase.from("profiles").upsert({
+            user_id: authData.user.id,
+            display_name: displayName,
+            age: ageNum,
+            onboarding_completed: true, // Default to true since we removed the flow
+            updated_at: new Date().toISOString(),
+          }, { onConflict: 'user_id' });
+
+          if (profileError) {
+            console.error("Manual profile creation failed:", profileError);
+            // Continue anyway, as the trigger might have worked
+          }
+        }
+
         toast({
           title: t("accountCreated"),
           description: t("welcomePrepare"),

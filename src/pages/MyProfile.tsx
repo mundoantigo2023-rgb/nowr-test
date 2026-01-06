@@ -408,8 +408,8 @@ const MyProfile = () => {
                   key={option.id}
                   onClick={() => setAvailability(option.id)}
                   className={`px-4 py-2 rounded-full text-sm font-medium transition-all border ${availability === option.id
-                      ? "bg-primary text-primary-foreground border-primary"
-                      : "bg-transparent text-muted-foreground border-border hover:border-primary/50"
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "bg-transparent text-muted-foreground border-border hover:border-primary/50"
                     }`}
                 >
                   {option.label}
@@ -429,8 +429,8 @@ const MyProfile = () => {
                   key={option.id}
                   onClick={() => toggleLookingFor(option.id)}
                   className={`px-4 py-2 rounded-full text-sm font-medium transition-all border ${lookingFor.includes(option.id)
-                      ? "bg-primary text-primary-foreground border-primary"
-                      : "bg-transparent text-muted-foreground border-border hover:border-primary/50"
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "bg-transparent text-muted-foreground border-border hover:border-primary/50"
                     }`}
                 >
                   {option.label}
@@ -463,12 +463,14 @@ const MyProfile = () => {
                       setSearchPreference(option.id);
                       if (user) {
                         await supabase.from("profiles").update({ search_preference: option.id }).eq("user_id", user.id);
+                        // Update local profile state to prevent reversion if fetching happens
+                        setProfile(prev => prev ? ({ ...prev, search_preference: option.id }) : null);
                         toast({ title: t("preferenceUpdated") });
                       }
                     }}
                     className={`px-4 py-2 rounded-full text-sm font-medium transition-all border ${searchPreference === option.id
-                        ? "bg-primary text-primary-foreground border-primary"
-                        : "bg-transparent text-muted-foreground border-border hover:border-primary/50"
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "bg-transparent text-muted-foreground border-border hover:border-primary/50"
                       }`}
                   >
                     {option.label}
@@ -491,12 +493,14 @@ const MyProfile = () => {
                       setVisibleGender(option.id);
                       if (user) {
                         await supabase.from("profiles").update({ visible_gender: option.id }).eq("user_id", user.id);
+                        // Update local profile state to prevent reversion
+                        setProfile(prev => prev ? ({ ...prev, visible_gender: option.id }) : null);
                         toast({ title: t("preferenceUpdated") });
                       }
                     }}
                     className={`px-4 py-2 rounded-full text-sm font-medium transition-all border ${visibleGender === option.id
-                        ? "bg-primary text-primary-foreground border-primary"
-                        : "bg-transparent text-muted-foreground border-border hover:border-primary/50"
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "bg-transparent text-muted-foreground border-border hover:border-primary/50"
                       }`}
                   >
                     {option.label}
