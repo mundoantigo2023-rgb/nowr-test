@@ -63,6 +63,8 @@ export const useInfiniteProfiles = (userId: string | undefined, searchPreference
       let error = null;
 
       // Strategy: RPC if location known, else standard query
+      let usedFallback = true; // Track if we used standard query
+
       if (userLoc) {
         const { data: rpcData, error: rpcError } = await supabase.rpc('get_nearby_profiles', {
           lat: userLoc.lat,
@@ -73,13 +75,17 @@ export const useInfiniteProfiles = (userId: string | undefined, searchPreference
           ignore_user_id: userId
         } as any);
 
-        if (rpcData) {
+        if (rpcError) {
+          console.error("RPC Error, falling back:", rpcError);
+          // Don't throw, let fallback handle it
+        } else if (rpcData && rpcData.length > 0) {
           // RPC returns loose object, cast to Profile (dist_km is extra but fine)
           data = rpcData.map((p: any) => ({ ...p, online_status: p.online_status || false })) as unknown as Profile[];
+          usedFallback = false;
         }
-        error = rpcError;
+      }
 
-      } else {
+      if (usedFallback) {
         // Fallback: Standard query (random/recency based)
         let query = supabase
           .from("profiles")
