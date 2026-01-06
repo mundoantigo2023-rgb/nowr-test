@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { usePWAInstall } from "@/hooks/usePWAInstall";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
@@ -36,6 +37,7 @@ const COOKIE_CONSENT_KEY = "nowr_cookie_consent";
 
 const Settings = () => {
   const navigate = useNavigate();
+  const { isInstallable, installApp } = usePWAInstall();
   const { toast } = useToast();
   const { t, language, setLanguage, supportedLanguages } = useLanguage();
   const [user, setUser] = useState<User | null>(null);
@@ -432,10 +434,16 @@ const Settings = () => {
             <Button
               variant="outline"
               className="w-full justify-start"
-              onClick={() => navigate("/install")}
+              onClick={async () => {
+                if (isInstallable) {
+                  await installApp();
+                } else {
+                  navigate("/install");
+                }
+              }}
             >
               <Download className="h-4 w-4 mr-2" />
-              {t("installNow")}
+              {isInstallable ? t("installNow") : t("installApp")}
             </Button>
           </CardContent>
         </Card>
