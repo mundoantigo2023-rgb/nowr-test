@@ -47,38 +47,16 @@ const Auth = () => {
 
   useEffect(() => {
     // Check for existing session first
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("onboarding_completed")
-          .eq("user_id", session.user.id)
-          .single<any>();
-
-        if (profile && profile.onboarding_completed) {
-          navigate("/home", { replace: true });
-        } else {
-          navigate("/onboarding", { replace: true });
-        }
+        navigate("/home", { replace: true });
       }
     });
 
     // Then listen for auth state changes (login/signup events)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      // Only redirect on actual sign-in events, not on initial session check
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === "SIGNED_IN" && session?.user) {
-        // Fetch profile to check onboarding status
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("onboarding_completed")
-          .eq("user_id", session.user.id)
-          .single();
-
-        if (profile && profile.onboarding_completed) {
-          navigate("/home", { replace: true });
-        } else {
-          navigate("/onboarding", { replace: true });
-        }
+        navigate("/home", { replace: true });
       }
     });
 

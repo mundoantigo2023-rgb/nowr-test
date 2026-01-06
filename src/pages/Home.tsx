@@ -98,11 +98,6 @@ const Home = () => {
             if (data) {
               if (data.city) setUserCity(data.city);
               setIsPrime(data.is_prime || false);
-
-              if (!data.search_preference) {
-                navigate("/onboarding");
-                return;
-              }
               setSearchPreference(data.search_preference);
             }
           });
