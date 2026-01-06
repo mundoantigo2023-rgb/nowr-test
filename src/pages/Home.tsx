@@ -206,20 +206,10 @@ const Home = () => {
       });
     }
 
-    // 2. SORTING (Boosted/Prime first, then Online, then Distance/Active)
-    result.sort((a, b) => {
-      // Boost priority
-      const aBoost = a.nowpick_active_until && new Date(a.nowpick_active_until) > new Date();
-      const bBoost = b.nowpick_active_until && new Date(b.nowpick_active_until) > new Date();
-      if (aBoost && !bBoost) return -1;
-      if (!aBoost && bBoost) return 1;
-
-      // Online priority
-      if (a.online_status && !b.online_status) return -1;
-      if (!a.online_status && b.online_status) return 1;
-
-      return 0;
-    });
+    // 2. SORTING
+    // We rely on the server-side sorting (Prime -> Recent -> UserID) from useInfiniteProfiles
+    // to ensure list stability and prevent "jumping" of cards.
+    // Client-side sorting here caused instability when profiles updated.
 
     // 3. SEGMENTATION (For You vs Regular)
     // "For You" = Top profiles (Boosted or highly compatible/popular)
