@@ -33,19 +33,20 @@ const FilterDrawer = ({
   searchPreference,
   onSearchPreferenceChange
 }: FilterDrawerProps) => {
+  // Filters are controlled by parent now, but we use local state for the form
   const [localFilters, setLocalFilters] = useState<FilterState>(filters);
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
   const { t } = useLanguage();
 
+  // Sync local filters when drawer opens or props change
+  // This ensures if we reset from outside, it reflects here
+  // useEffect(() => {
+  //   setLocalFilters(filters);
+  // }, [filters, open]);
+
   // Prevent carry-over clicks
   const interactionEnabled = useInteractionDelay(open, 350);
-
-  const searchPreferenceOptions: { id: SearchPreference; label: string }[] = [
-    { id: "men", label: t("men") },
-    { id: "women", label: t("women") },
-    { id: "both", label: t("both") },
-  ];
 
   const handleApply = () => {
     onFiltersChange(localFilters);
@@ -60,7 +61,7 @@ const FilterDrawer = ({
       interests: [],
     };
     setLocalFilters(defaultFilters);
-    onFiltersChange(defaultFilters);
+    onFiltersChange(defaultFilters); // Apply immediately on reset
   };
 
   const toggleInterest = (id: string) => {

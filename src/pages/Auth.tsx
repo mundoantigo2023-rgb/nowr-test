@@ -181,10 +181,17 @@ const Auth = () => {
             age: parseInt(age), // Ensure it's a number
             onboarding_completed: true,
             updated_at: new Date().toISOString(),
-          }, { onConflict: 'user_id' });
+          } as any, { onConflict: 'user_id' });
 
           if (profileError) {
             console.error("Manual profile creation failed:", profileError);
+          } else {
+            // Trigger background location update immediately after profile creation
+            // We don't await this to keep UI snappy, but it starts the process
+            // This requires importing the hook logic or just running the raw code, 
+            // but since we are inside a function, let's keep it simple for now and rely on Home.tsx 
+            // to pick it up, OR we can try to do a quick basic update here if we had coordinates.
+            // For now, let's rely on the Home page mount to refresh location.
           }
         }
 

@@ -230,6 +230,7 @@ const MyProfile = () => {
           short_description: description,
           intention_tags: intentionTags,
           invisible_mode: invisibleMode,
+          show_age: showAge,
         })
         .eq("user_id", user.id);
 
@@ -380,6 +381,20 @@ const MyProfile = () => {
               </p>
             </div>
 
+            {/* Prime Feature: Hide Age */}
+            {isPrime && (
+              <div className="flex items-center justify-between pt-2">
+                <div className="space-y-0.5">
+                  <Label className="text-sm font-medium">{t("showAge")}</Label>
+                  <p className="text-xs text-muted-foreground">{t("showAgeDesc")}</p>
+                </div>
+                <Switch
+                  checked={showAge}
+                  onCheckedChange={(checked) => setShowAge(checked)}
+                />
+              </div>
+            )}
+
             <div className="space-y-2">
               <Label htmlFor="description">{t("shortBio")}</Label>
               <Textarea
@@ -460,12 +475,21 @@ const MyProfile = () => {
                   <button
                     key={option.id}
                     onClick={async () => {
+                      // Optimistic update
                       setSearchPreference(option.id);
+
+                      // Update in background
                       if (user) {
-                        await supabase.from("profiles").update({ search_preference: option.id }).eq("user_id", user.id);
-                        // Update local profile state to prevent reversion if fetching happens
-                        setProfile(prev => prev ? ({ ...prev, search_preference: option.id }) : null);
-                        toast({ title: t("preferenceUpdated") });
+                        const { error } = await supabase.from("profiles").update({ search_preference: option.id }).eq("user_id", user.id);
+                        if (!error) {
+                          // Update local profile object to prevent overwriting on next save
+                          setProfile(prev => prev ? ({ ...prev, search_preference: option.id }) : null);
+                          toast({ title: t("preferenceUpdated") });
+                        } else {
+                          // Revert on error
+                          setSearchPreference(searchPreference);
+                          toast({ title: t("error"), variant: "destructive" });
+                        }
                       }
                     }}
                     className={`px-4 py-2 rounded-full text-sm font-medium transition-all border ${searchPreference === option.id

@@ -20,7 +20,7 @@ const NavItem = ({ icon: Icon, label, isActive, isPrime, badge, onClick }: NavIt
     className={cn(
       "flex flex-col items-center justify-center gap-0.5 flex-1 py-2 transition-all duration-200 relative",
       isPrime && !isActive && "text-prime",
-      isActive 
+      isActive
         ? isPrime ? "text-prime" : "text-primary"
         : !isPrime && "text-muted-foreground hover:text-foreground"
     )}
@@ -60,7 +60,7 @@ const BottomNav = () => {
             icon={item.icon}
             label={item.label}
             path={item.path}
-            isActive={location.pathname === item.path}
+            isActive={location.pathname === item.path || (item.path === "/home" && location.pathname === "/")}
             isPrime={item.isPrime}
             badge={item.badge}
             onClick={() => navigate(item.path)}
