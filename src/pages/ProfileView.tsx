@@ -182,11 +182,13 @@ const ProfileView = () => {
       setCurrentUserId(session.user.id);
 
       // Fetch current user's location and prime status
-      const { data: currentUserProfile } = await supabase
+      const { data: profileDataResponse } = await supabase
         .from("profiles")
         .select("latitude, longitude, is_prime")
         .eq("user_id", session.user.id)
         .single();
+
+      const currentUserProfile = profileDataResponse as any;
 
       if (currentUserProfile) {
         setCurrentUserLocation({
@@ -504,7 +506,7 @@ const ProfileView = () => {
                     Conectado ahora
                   </span>
                 ) : (
-                  <span className="text-muted-foreground flex items-center gap-1.5">
+                  <span className="text-gray-400 flex items-center gap-1.5">
                     <span className="w-2 h-2 rounded-full bg-border" />
                     {profile.last_active ? "Activo recientemente" : "Desconectado"}
                   </span>
