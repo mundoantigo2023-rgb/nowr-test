@@ -55,7 +55,6 @@ const Home = () => {
     const filters = [
       { id: "online", label: t("online"), active: quickFilterState.online },
       { id: "nearby", label: t("nearby"), active: quickFilterState.nearby },
-      { id: "favorites", label: "Favoritos", active: quickFilterState.favorites }, // New "Favorites" filter
     ];
 
     if (isPrime) {
@@ -207,11 +206,10 @@ const Home = () => {
     // Client-side sorting here caused instability when profiles updated.
 
     // 3. SEGMENTATION (For You vs Regular)
-    // "For You" = Top profiles (Boosted or highly compatible/popular)
-    // Simplification: Take top 6 profiles as "For You" if they meet criteria (Prime or Boosted)
+    // "Destacados" (formerly For You) = ONLY Prime users or Boosted profiles
     const forYouCandidates = result.filter(p => (p.nowpick_active_until && new Date(p.nowpick_active_until) > new Date()) || p.is_prime);
 
-    // Sort "For You" by boost status/Prime to ensure quality
+    // Sort "Destacados" by boost status/Prime to ensure quality
     forYouCandidates.sort((a, b) => {
       // Boosted first
       const aBoost = a.nowpick_active_until && new Date(a.nowpick_active_until) > new Date();
@@ -223,10 +221,9 @@ const Home = () => {
 
     const forYou = forYouCandidates.slice(0, 6); // Keep limited number
 
-    // Remove For You items from Regular list to avoid duplication
+    // Remove "Destacados" items from Regular list to avoid duplication
     const forYouIds = new Set(forYou.map(p => p.user_id));
     let regular = result.filter(p => !forYouIds.has(p.user_id));
-
 
     // FREE tier limit
     let limitReached = false;
@@ -307,7 +304,7 @@ const Home = () => {
         {forYouProfiles.length > 0 && (
           <div className="mb-6 mt-2 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="flex items-center gap-2 mb-3 px-2">
-              <h2 className="text-lg font-bold text-foreground tracking-tight">For You</h2>
+              <h2 className="text-lg font-bold text-foreground tracking-tight">Destacados</h2>
               <span className="px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-500 text-[10px] font-bold border border-amber-500/20 shadow-sm">DESTACADOS</span>
             </div>
 

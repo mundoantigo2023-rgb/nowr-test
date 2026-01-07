@@ -551,6 +551,7 @@ const MyProfile = () => {
           <PrivateAlbumManager
             userId={user.id}
             privatePhotos={privatePhotos}
+            isPrime={isPrime}
             onPhotosChange={setPrivatePhotos}
           />
         )}

@@ -300,9 +300,6 @@ const Chat = () => {
           if (newMsg.sender_id !== userId) {
             setOtherUserSentMessage(true);
             playNotificationSound();
-
-            // Note: We avoid complex logic relying on stale closures here for simplicity and stability.
-            // The "Reciprocity" timer logic is better handled by separate effects watching 'messages'.
           }
         }
       )
@@ -481,6 +478,12 @@ const Chat = () => {
 
   const startChatTimer = async () => {
     if (!match) return;
+
+    // CRITICAL FIX: If expires_at is already set, DO NOT reset it.
+    // The timer must run continuously from the first interaction.
+    if (match.expires_at) {
+      return;
+    }
 
     const expiresAt = new Date(Date.now() + CHAT_DURATION_FREE);
 

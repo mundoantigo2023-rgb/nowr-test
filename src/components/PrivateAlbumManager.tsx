@@ -9,16 +9,17 @@ import { cn } from "@/lib/utils";
 interface PrivateAlbumManagerProps {
   userId: string;
   privatePhotos: string[];
+  isPrime: boolean;
   onPhotosChange: (photos: string[]) => void;
 }
 
-const MAX_PRIVATE_PHOTOS = 6;
-
-const PrivateAlbumManager = ({ userId, privatePhotos, onPhotosChange }: PrivateAlbumManagerProps) => {
+const PrivateAlbumManager = ({ userId, privatePhotos, isPrime, onPhotosChange }: PrivateAlbumManagerProps) => {
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [deletingIndex, setDeletingIndex] = useState<number | null>(null);
+
+  const MAX_PRIVATE_PHOTOS = isPrime ? 100 : 3;
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -27,8 +28,10 @@ const PrivateAlbumManager = ({ userId, privatePhotos, onPhotosChange }: PrivateA
     const remainingSlots = MAX_PRIVATE_PHOTOS - privatePhotos.length;
     if (remainingSlots <= 0) {
       toast({
-        title: "Límite alcanzado",
-        description: `Máximo ${MAX_PRIVATE_PHOTOS} fotos en el álbum privado`,
+        title: isPrime ? "Límite alcanzado" : "Límite gratuito alcanzado",
+        description: isPrime
+          ? `Máximo ${MAX_PRIVATE_PHOTOS} fotos.`
+          : `Máximo ${MAX_PRIVATE_PHOTOS} fotos en el plan gratuito. Hazte Prime para subir más.`,
         variant: "destructive",
       });
       return;

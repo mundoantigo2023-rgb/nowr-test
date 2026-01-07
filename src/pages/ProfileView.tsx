@@ -427,8 +427,8 @@ const ProfileView = () => {
         </div>
 
         <div className="px-4 max-w-lg mx-auto relative">
-          {/* PROFILE PHOTO - Refactored Layout: Max 40-50% Viewport */}
-          <div className="relative w-full aspect-[4/5] max-h-[45vh] md:max-h-[50vh] mx-auto rounded-3xl overflow-hidden shadow-sm bg-secondary/30 touch-pan-y transition-all">
+          {/* PROFILE PHOTO - Mobile First Layout: ~50% Viewport */}
+          <div className="relative w-full aspect-[4/5] max-h-[50vh] md:max-h-[55vh] mx-auto rounded-b-3xl md:rounded-3xl overflow-hidden shadow-md bg-secondary/30 touch-pan-y transition-all">
             {/* Photo Carousel */}
             <img
               src={photos[currentPhoto]}
@@ -442,15 +442,18 @@ const ProfileView = () => {
               onTouchEnd={handleTouchEnd}
             />
 
+            {/* Gradient Overlay for Text Readability if needed */}
+            <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-black/60 to-transparent pointer-events-none md:hidden" />
+
             {/* Carousel Indicators */}
             {photos.length > 1 && (
-              <div className="absolute top-2 left-0 right-0 flex justify-center gap-1 px-2 z-10">
+              <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-1.5 px-2 z-10">
                 {photos.map((_, idx) => (
                   <div
                     key={idx}
                     className={cn(
-                      "h-1 rounded-full transition-all duration-300 shadow-sm",
-                      idx === currentPhoto ? "w-6 bg-white" : "w-1.5 bg-white/50"
+                      "h-1.5 rounded-full transition-all duration-300 shadow-sm backdrop-blur-sm",
+                      idx === currentPhoto ? "w-6 bg-white" : "w-1.5 bg-white/40"
                     )}
                   />
                 ))}
@@ -469,7 +472,7 @@ const ProfileView = () => {
             <Button
               variant="ghost"
               size="icon"
-              className="absolute bottom-2 right-2 bg-black/20 backdrop-blur-md rounded-full text-white hover:bg-black/40 z-20"
+              className="absolute top-4 right-4 bg-black/20 backdrop-blur-md rounded-full text-white hover:bg-black/40 z-20"
               onClick={() => setPhotoViewerOpen(true)}
             >
               <Maximize2 className="h-4 w-4" />
@@ -477,50 +480,46 @@ const ProfileView = () => {
           </div>
 
           {/* PROFILE INFO - Organized Below */}
-          <div className="mt-5 space-y-4 pb-8">
+          <div className="mt-4 px-1 space-y-4 pb-8">
             {/* Header: Name & Age (Check show_age preference) */}
-            <div className="flex items-center justify-between">
-              <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-2 text-foreground">
-                {profile.display_name}
-                {(profile.show_age !== false) && (
-                  <span className="text-2xl md:text-3xl font-normal text-muted-foreground">{profile.age}</span>
-                )}
-                {profile.is_prime && <Crown className="w-6 h-6 text-prime animate-prime-shimmer ml-1" />}
-              </h1>
-            </div>
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <h1 className="text-3xl font-bold flex items-center text-foreground tracking-tight">
+                  {profile.display_name}
+                  {(profile.show_age !== false) && (
+                    <span className="ml-2 text-3xl font-normal text-muted-foreground">{profile.age}</span>
+                  )}
+                </h1>
+                {profile.is_prime && <Crown className="w-6 h-6 text-prime animate-prime-shimmer" />}
+              </div>
 
-            {/* Status & Location */}
-            <div className="border-b border-border pb-4 space-y-3">
-              <div className="flex items-center gap-2 text-sm md:text-base font-medium text-foreground/90">
+              {/* Online Status Line */}
+              <div className="flex items-center gap-2 text-sm font-medium">
                 {profile.online_status ? (
-                  <>
-                    <span className="w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.5)]" />
+                  <span className="flex items-center gap-1.5 text-green-500">
+                    <span className="relative flex h-2.5 w-2.5">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500"></span>
+                    </span>
                     Conectado ahora
-                  </>
+                  </span>
                 ) : (
-                  <>
-                    <span className="w-2.5 h-2.5 bg-gray-400 rounded-full" />
-                    {profile.last_active ? "Recientemente activo" : "Desconectado"}
-                  </>
+                  <span className="text-muted-foreground flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-border" />
+                    {profile.last_active ? "Activo recientemente" : "Desconectado"}
+                  </span>
                 )}
               </div>
 
-              {/* Location Info */}
-              <div className="grid transition-all duration-300 ease-out overflow-hidden mt-1 pl-3 border-l-2 border-primary/20">
-                <div className="flex flex-col gap-1.5">
-                  {distance !== null && (
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <MapPin className="w-4 h-4" />
-                      A {distance < 1 ? `${Math.round(distance * 1000)} m` : `${distance.toFixed(1)} km`} de ti
-                    </div>
-                  )}
-                  {profile.city && (
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <MapPin className="w-4 h-4 opacity-50" />
-                      {profile.city}
-                    </div>
-                  )}
-                </div>
+              {/* Location Line - Distinct */}
+              <div className="flex items-center gap-2 text-sm text-foreground/80 mt-1">
+                <MapPin className="w-4 h-4 text-primary/70 shrink-0" />
+                {distance !== null ? (
+                  <span className="font-medium">A {distance < 1 ? `${Math.round(distance * 1000)} m` : `${distance.toFixed(1)} km`}</span>
+                ) : (
+                  <span className="text-muted-foreground">Ubicación oculta</span>
+                )}
+                {profile.city && <span className="text-muted-foreground">• {profile.city}</span>}
               </div>
             </div>
 
