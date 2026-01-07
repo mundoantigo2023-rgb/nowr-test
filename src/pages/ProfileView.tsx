@@ -524,33 +524,41 @@ const ProfileView = () => {
             </div>
 
             {/* Bio / Description */}
-            {profile.short_description && (
-              <div className="pt-1">
-                <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">SOBRE MÍ</h3>
-                <p className="text-base md:text-lg leading-relaxed text-foreground whitespace-pre-wrap">
+            <div className="pt-1">
+              <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">SOBRE MÍ</h3>
+              {profile.short_description ? (
+                <p className="text-base md:text-lg leading-relaxed text-white/90 whitespace-pre-wrap font-light">
                   {profile.short_description}
                 </p>
-              </div>
-            )}
+              ) : (
+                <p className="text-sm text-gray-500 italic">
+                  Sin descripción.
+                </p>
+              )}
+            </div>
 
             {/* Interests / Tags */}
-            {profile.intention_tags && profile.intention_tags.length > 0 && (
-              <div className="pt-2">
-                <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">INTERESES</h3>
+            <div className="pt-2">
+              <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">INTERESES</h3>
+              {profile.intention_tags && profile.intention_tags.length > 0 ? (
                 <div className="flex flex-wrap gap-2">
                   {profile.intention_tags.map((tag, i) => (
-                    <span key={i} className="px-3 py-1.5 bg-secondary/60 hover:bg-secondary rounded-full text-sm font-medium border border-border/50 text-foreground/90 transition-colors">
+                    <span key={i} className="px-3 py-1.5 bg-zinc-800/80 hover:bg-zinc-700/80 rounded-full text-sm font-medium border border-white/10 text-white/90 transition-colors">
                       {getTagLabel(tag)}
                     </span>
                   ))}
                 </div>
-              </div>
-            )}
+              ) : (
+                <p className="text-sm text-gray-500 italic">
+                  Sin intereses seleccionados.
+                </p>
+              )}
+            </div>
 
             {/* Gallery Thumbnails if > 1 */}
             {photos.length > 1 && (
               <div className="pt-4">
-                <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3">GALERÍA</h3>
+                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">GALERÍA</h3>
                 <div className="flex gap-2 overflow-x-auto pb-4 scrollbar-hide">
                   {photos.map((photo, idx) => (
                     <button
@@ -568,37 +576,36 @@ const ProfileView = () => {
               </div>
             )}
 
-
             {/* Private Photos Section - Prime Feature */}
             {profile.is_prime && profile.private_photos && profile.private_photos.length > 0 && (
               <div className="pt-4 pb-2">
                 <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+                  <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-2">
                     <Lock className="w-3 h-3" />
                     GALERÍA PRIVADA ({profile.private_photos.length})
                   </h3>
                   {!currentUserIsPrime && (
-                    <span className="text-[10px] bg-prime/20 text-prime px-2 py-0.5 rounded-full font-bold uppercase border border-prime/30">
+                    <span className="text-[10px] bg-amber-500/20 text-amber-500 px-2 py-0.5 rounded-full font-bold uppercase border border-amber-500/30">
                       Prime
                     </span>
                   )}
                 </div>
 
-                <div className="relative overflow-hidden rounded-xl aspect-[3/2] bg-secondary/50 group cursor-pointer border border-border/50">
-                  {/* Blur Overlay if not authorized - Simplified logic here, assuming typical access control */}
-                  <div className="absolute inset-0 backdrop-blur-xl bg-black/40 flex flex-col items-center justify-center p-6 text-center z-10">
+                <div className="relative overflow-hidden rounded-xl aspect-[3/2] bg-zinc-900/50 group cursor-pointer border border-white/10">
+                  {/* Blur Overlay if not authorized */}
+                  <div className="absolute inset-0 backdrop-blur-xl bg-black/60 flex flex-col items-center justify-center p-6 text-center z-10">
                     <div className="w-12 h-12 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
                       <Lock className="w-6 h-6 text-white" />
                     </div>
                     <h4 className="text-white font-bold text-sm mb-1">Fotos Privadas</h4>
-                    <p className="text-white/70 text-xs">
+                    <p className="text-gray-400 text-xs">
                       {currentUserIsPrime
                         ? "Solicita acceso para ver"
                         : "Mejora a Prime para solicitar acceso"}
                     </p>
                   </div>
 
-                  {/* Background placeholder (first private photo blurred) */}
+                  {/* Background placeholder */}
                   <img
                     src={profile.private_photos[0]}
                     alt="Private content"

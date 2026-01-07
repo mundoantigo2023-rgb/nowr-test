@@ -64,12 +64,18 @@ const PrivateAlbumManager = ({ userId, privatePhotos, isPrime, onPhotosChange }:
         }
 
         const fileExt = file.name.split(".").pop();
-        const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+        const cleanFileName = file.name.replace(/[^a-zA-Z0-9]/g, '');
+        const fileName = `${Date.now()}-${cleanFileName}-${Math.random().toString(36).substring(7)}.${fileExt}`;
         const filePath = `${userId}/${fileName}`;
 
+        console.log("Uploading to private_photos:", filePath);
+
         const { error: uploadError } = await supabase.storage
-          .from("private_photos") // Correct bucket name based on user rules usually being lower_snake_case or checking RLS
-          .upload(filePath, file);
+          .from("private_photos")
+          .upload(filePath, file, {
+            cacheControl: "3600",
+            upsert: false
+          });
 
         if (uploadError) {
           console.error("Upload error:", uploadError);
