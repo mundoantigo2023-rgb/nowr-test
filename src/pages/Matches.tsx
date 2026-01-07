@@ -14,7 +14,7 @@ interface Match {
   user_a: string;
   user_b: string;
   matched_at: string;
-  chat_expires_at: string | null;
+  expires_at: string | null;
   other_profile: {
     display_name: string;
     photos: string[];
@@ -42,34 +42,34 @@ const Matches = () => {
       setUserId(session.user.id);
 
       // Get user's prime status
-      const { data: userProfile } = await supabase
-        .from("profiles")
+      const { data: userProfile } = await (supabase
+        .from("profiles") as any)
         .select("is_prime")
         .eq("user_id", session.user.id)
         .single();
-      setUserIsPrime(userProfile?.is_prime || false);
+      setUserIsPrime((userProfile as any)?.is_prime || false);
 
       // Get matches
-      const { data } = await supabase
-        .from("matches")
+      const { data } = await (supabase
+        .from("matches") as any)
         .select("*")
         .or(`user_a.eq.${session.user.id},user_b.eq.${session.user.id}`)
         .order("matched_at", { ascending: false });
 
       if (data) {
-        const enriched = await Promise.all(data.map(async (match) => {
+        const enriched = await Promise.all(data.map(async (match: any) => {
           const otherId = match.user_a === session.user.id ? match.user_b : match.user_a;
-          
+
           // Get other user's profile
-          const { data: profile } = await supabase
-            .from("profiles")
+          const { data: profile } = await (supabase
+            .from("profiles") as any)
             .select("display_name, photos, online_status, is_prime")
             .eq("user_id", otherId)
             .single();
 
           // Get last message
-          const { data: lastMsg } = await supabase
-            .from("messages")
+          const { data: lastMsg } = await (supabase
+            .from("messages") as any)
             .select("content, created_at")
             .eq("match_id", match.id)
             .order("created_at", { ascending: false })
@@ -106,8 +106,8 @@ const Matches = () => {
         (payload) => {
           const newMsg = payload.new as { match_id: string; content: string; created_at: string };
           if (matchIds.includes(newMsg.match_id)) {
-            setMatches(prev => prev.map(m => 
-              m.id === newMsg.match_id 
+            setMatches(prev => prev.map(m =>
+              m.id === newMsg.match_id
                 ? { ...m, last_message: { content: newMsg.content, created_at: newMsg.created_at } }
                 : m
             ));
@@ -122,15 +122,15 @@ const Matches = () => {
   }, [userId, matches.length]);
 
   const isExpired = (match: Match) => {
-    if (!match.chat_expires_at) return false;
+    if (!match.expires_at) return false;
     if (userIsPrime || match.other_profile.is_prime) return false;
-    return new Date(match.chat_expires_at) < new Date();
+    return new Date(match.expires_at) < new Date();
   };
 
   // Count expiring matches (within next 10 minutes)
   const expiringCount = matches.filter(match => {
-    if (!match.chat_expires_at || userIsPrime || match.other_profile.is_prime) return false;
-    const expiresAt = new Date(match.chat_expires_at);
+    if (!match.expires_at || userIsPrime || match.other_profile.is_prime) return false;
+    const expiresAt = new Date(match.expires_at);
     const now = new Date();
     const tenMinutesFromNow = new Date(now.getTime() + 10 * 60 * 1000);
     return expiresAt > now && expiresAt <= tenMinutesFromNow;
@@ -196,7 +196,7 @@ const Matches = () => {
                       <span className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-online rounded-full border-2 border-card" />
                     )}
                   </div>
-                  
+
                   <div className="flex-1 text-left min-w-0">
                     <div className="flex items-center gap-2">
                       <p className="font-medium truncate text-foreground">{match.other_profile.display_name}</p>

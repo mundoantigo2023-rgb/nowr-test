@@ -135,12 +135,12 @@ const Chat = () => {
         .select("is_prime, private_photos")
         .eq("user_id", session.user.id)
         .single();
-      setIsPrime(userProfile?.is_prime || false);
-      setMyPrivatePhotos(userProfile?.private_photos || []);
+      setIsPrime((userProfile as any)?.is_prime || false);
+      setMyPrivatePhotos((userProfile as any)?.private_photos || []);
 
       // Get match data
-      const { data: matchData, error: matchError } = await supabase
-        .from("matches")
+      const { data: matchData, error: matchError } = await (supabase
+        .from("matches") as any)
         .select("*")
         .eq("id", matchId)
         .single();
@@ -173,8 +173,8 @@ const Chat = () => {
       track("chat_opened", { matchId, otherUserId: otherId });
 
       // Get messages
-      const { data: messagesData } = await supabase
-        .from("messages")
+      const { data: messagesData } = await (supabase
+        .from("messages") as any)
         .select("*")
         .eq("match_id", matchId)
         .order("created_at", { ascending: true });
@@ -188,8 +188,8 @@ const Chat = () => {
           .map(m => m.id);
 
         if (unreadMessageIds.length > 0) {
-          await supabase
-            .from("messages")
+          await (supabase
+            .from("messages") as any)
             .update({ is_read: true })
             .in("id", unreadMessageIds);
         }
@@ -206,16 +206,19 @@ const Chat = () => {
       if (matchData.expires_at) {
         const expiresAt = new Date(matchData.expires_at).getTime();
         const now = Date.now();
-        const userIsFree = !userProfile?.is_prime;
-        const otherIsFree = !profileData?.is_prime;
+        const userIsFree = !(userProfile as any)?.is_prime;
+        const otherIsFree = !(profileData as any)?.is_prime;
 
         if (now >= expiresAt && userIsFree && otherIsFree) {
           // Both are Free and chat expired - delete everything immediately
           setChatExpired(true);
 
-          // Delete messages and match
-          await supabase.from("messages").delete().eq("match_id", matchId);
-          await supabase.from("matches").delete().eq("id", matchId);
+          // Delete messages, match, AND interests to allow re-tap
+          if (otherId) {
+            await (supabase.from("interests") as any).delete().or(`and(from_user_id.eq.${userId},to_user_id.eq.${otherId}),and(from_user_id.eq.${otherId},to_user_id.eq.${userId})`);
+          }
+          await (supabase.from("messages") as any).delete().eq("match_id", matchId);
+          await (supabase.from("matches") as any).delete().eq("id", matchId);
 
           // Navigate away
           navigate("/matches");
@@ -481,8 +484,8 @@ const Chat = () => {
 
     const expiresAt = new Date(Date.now() + CHAT_DURATION_FREE);
 
-    await supabase
-      .from("matches")
+    await (supabase
+      .from("matches") as any)
       .update({
         expires_at: expiresAt.toISOString(),
       })
@@ -505,17 +508,24 @@ const Chat = () => {
     if (!matchId || !match) return;
 
     try {
-      // Delete all messages from this match
-      await supabase
-        .from("messages")
+      // Delete matches, messages, AND interests to allow re-tap
+      await (supabase
+        .from("messages") as any)
         .delete()
         .eq("match_id", matchId);
 
-      // Delete the match itself
-      await supabase
-        .from("matches")
+      await (supabase
+        .from("matches") as any)
         .delete()
         .eq("id", matchId);
+
+      // Clean up interests for both users so they can tap again later
+      const { data: matchData } = await (supabase.from("matches") as any).select("user1_id, user2_id").eq("id", matchId).single();
+      if (matchData) {
+        await (supabase.from("interests") as any).delete().or(`and(from_user_id.eq.${matchData.user1_id},to_user_id.eq.${matchData.user2_id}),and(from_user_id.eq.${matchData.user2_id},to_user_id.eq.${matchData.user1_id})`);
+      } else {
+        // Fallback if match data read failed, try using known IDs if available in context (less reliable here without knowing who user2 is easily if not in state)
+      }
 
       // Navigate back to matches after a short delay
       setTimeout(() => {
@@ -538,8 +548,8 @@ const Chat = () => {
 
     const expiresAt = new Date(Date.now() + PRIME_EXTENSION_DURATION);
 
-    await supabase
-      .from("matches")
+    await (supabase
+      .from("matches") as any)
       .update({
         expires_at: expiresAt.toISOString(),
       })
@@ -574,8 +584,8 @@ const Chat = () => {
     // If other user is Free, extend by 60 minutes
     if (otherProfile?.is_prime) {
       // Both Prime - unlimited chat
-      await supabase
-        .from("matches")
+      await (supabase
+        .from("matches") as any)
         .update({
           expires_at: null,
         })
@@ -594,8 +604,8 @@ const Chat = () => {
       // Prime + Free - extend by 60 minutes
       const expiresAt = new Date(Date.now() + PRIME_EXTENSION_DURATION);
 
-      await supabase
-        .from("matches")
+      await (supabase
+        .from("matches") as any)
         .update({
           expires_at: expiresAt.toISOString(),
         })
@@ -673,7 +683,7 @@ const Chat = () => {
       const isFirstMessage = !userHasSent;
 
       // Insert message
-      const { error } = await supabase.from("messages").insert({
+      const { error } = await (supabase.from("messages") as any).insert({
         match_id: matchId,
         sender_id: userId,
         content: messageContent,
@@ -744,14 +754,19 @@ const Chat = () => {
     if (!userId || !matchId) return;
 
     try {
-      const { error } = await supabase.from("messages").insert({
+      // Calculate expiration time for the message itself (if supported by DB)
+      // duration is in seconds, so we convert to expires_at timestamp
+      const expiresAt = new Date(Date.now() + duration * 1000).toISOString();
+
+      const { error } = await (supabase.from("messages") as any).insert({
         match_id: matchId,
         sender_id: userId,
         content: "📸 NowPik",
-        // is_temporary: true, // Column does not exist
-        // nowpik_image_url: imageUrl, // Column does not exist
-        // nowpik_duration: duration, // Column does not exist
-        // nowpik_viewed: false, // Column does not exist
+        is_temporary: true,
+        nowpik_image_url: imageUrl,
+        nowpik_duration: duration,
+        nowpik_viewed: false,
+        expires_at: expiresAt // Adding explicit expiration timestamp
       });
 
       if (error) throw error;

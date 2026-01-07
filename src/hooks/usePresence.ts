@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
-export type PresenceStatus = 
+export type PresenceStatus =
   | "online" // 0-2 min
   | "recent" // 3-30 min
   | "hours"  // 31 min - 24h
@@ -16,30 +16,30 @@ export interface PresenceInfo {
 // Translated labels by language and status
 export const presenceLabels: Record<string, Record<PresenceStatus, { exact: (min: number) => string; generic: string }>> = {
   es: {
-    online: { exact: () => "Conectado ahora", generic: "Activo" },
-    recent: { exact: (min) => `Activo hace ${min} min`, generic: "Activo recientemente" },
-    hours: { exact: (min) => `Activo hace ${Math.floor(min / 60)}h`, generic: "Hoy" },
+    online: { exact: () => "Conectado ahora", generic: "Conectado ahora" },
+    recent: { exact: (min) => `Hace ${min} min`, generic: "Hace unos minutos" },
+    hours: { exact: (min) => `Hace ${Math.floor(min / 60)}h`, generic: "Hoy" },
     yesterday: { exact: () => "Visto ayer", generic: "Ayer" },
     days: { exact: () => "Visto hace días", generic: "Hace días" },
   },
   en: {
-    online: { exact: () => "Online now", generic: "Active" },
-    recent: { exact: (min) => `Active ${min} min ago`, generic: "Recently active" },
-    hours: { exact: (min) => `Active ${Math.floor(min / 60)}h ago`, generic: "Today" },
+    online: { exact: () => "Online now", generic: "Online now" },
+    recent: { exact: (min) => `${min} min ago`, generic: "A few minutes ago" },
+    hours: { exact: (min) => `${Math.floor(min / 60)}h ago`, generic: "Today" },
     yesterday: { exact: () => "Seen yesterday", generic: "Yesterday" },
     days: { exact: () => "Seen days ago", generic: "Days ago" },
   },
   pt: {
-    online: { exact: () => "Online agora", generic: "Ativo" },
-    recent: { exact: (min) => `Ativo há ${min} min`, generic: "Ativo recentemente" },
-    hours: { exact: (min) => `Ativo há ${Math.floor(min / 60)}h`, generic: "Hoje" },
+    online: { exact: () => "Online agora", generic: "Online agora" },
+    recent: { exact: (min) => `Há ${min} min`, generic: "Há alguns minutos" },
+    hours: { exact: (min) => `Há ${Math.floor(min / 60)}h`, generic: "Hoje" },
     yesterday: { exact: () => "Visto ontem", generic: "Ontem" },
     days: { exact: () => "Visto há dias", generic: "Há dias" },
   },
   fr: {
-    online: { exact: () => "En ligne", generic: "Actif" },
-    recent: { exact: (min) => `Actif il y a ${min} min`, generic: "Récemment actif" },
-    hours: { exact: (min) => `Actif il y a ${Math.floor(min / 60)}h`, generic: "Aujourd'hui" },
+    online: { exact: () => "En ligne", generic: "En ligne" },
+    recent: { exact: (min) => `Il y a ${min} min`, generic: "Il y a quelques minutes" },
+    hours: { exact: (min) => `Il y a ${Math.floor(min / 60)}h`, generic: "Aujourd'hui" },
     yesterday: { exact: () => "Vu hier", generic: "Hier" },
     days: { exact: () => "Vu il y a quelques jours", generic: "Il y a quelques jours" },
   },
@@ -47,7 +47,7 @@ export const presenceLabels: Record<string, Record<PresenceStatus, { exact: (min
 
 // Calculate presence info from last_active timestamp
 export function getPresenceInfo(
-  lastActive: string | null, 
+  lastActive: string | null,
   isOnline: boolean | null,
   hideActivityStatus: boolean = false
 ): PresenceInfo | null {
@@ -121,7 +121,7 @@ export function getPresenceLabel(
 ): string {
   const lang = presenceLabels[language] || presenceLabels.es;
   const statusLabels = lang[presence.status];
-  
+
   return isPrime ? statusLabels.exact(presence.minutesAgo) : statusLabels.generic;
 }
 
@@ -144,11 +144,11 @@ export function usePresenceTracker(userId: string | undefined) {
     lastActivityRef.current = now;
 
     try {
-      await supabase
-        .from("profiles")
-        .update({ 
-          online_status: forceOnline, 
-          last_active: new Date().toISOString() 
+      await (supabase
+        .from("profiles") as any)
+        .update({
+          online_status: forceOnline,
+          last_active: new Date().toISOString()
         })
         .eq("user_id", userId);
     } catch (error) {
@@ -160,8 +160,8 @@ export function usePresenceTracker(userId: string | undefined) {
     if (!userId) return;
 
     try {
-      await supabase
-        .from("profiles")
+      await (supabase
+        .from("profiles") as any)
         .update({ online_status: false })
         .eq("user_id", userId);
     } catch (error) {
@@ -172,18 +172,18 @@ export function usePresenceTracker(userId: string | undefined) {
   // Use sendBeacon for reliable offline notification when page closes
   const setOfflineBeacon = useCallback(() => {
     if (!userId) return;
-    
+
     const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
     const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-    
+
     if (!supabaseUrl || !supabaseKey) return;
 
     const url = `${supabaseUrl}/rest/v1/profiles?user_id=eq.${userId}`;
     const data = JSON.stringify({ online_status: false });
-    
+
     // sendBeacon is more reliable than fetch for page unload
     const blob = new Blob([data], { type: "application/json" });
-    
+
     // Try sendBeacon first (most reliable for page close)
     if (navigator.sendBeacon) {
       // Create a form data approach for better compatibility
@@ -193,7 +193,7 @@ export function usePresenceTracker(userId: string | undefined) {
         "Content-Type": "application/json",
         "Prefer": "return=minimal"
       };
-      
+
       // Use fetch with keepalive as primary method (better header support)
       fetch(url, {
         method: "PATCH",

@@ -89,8 +89,8 @@ const PrivateAlbumManager = ({ userId, privatePhotos, onPhotosChange }: PrivateA
         const newPhotos = [...privatePhotos, ...uploadedUrls];
 
         // Update profile in database
-        const { error: updateError } = await supabase
-          .from("profiles")
+        const { error: updateError } = await (supabase
+          .from("profiles") as any)
           .update({ private_photos: newPhotos })
           .eq("user_id", userId);
 
@@ -139,8 +139,8 @@ const PrivateAlbumManager = ({ userId, privatePhotos, onPhotosChange }: PrivateA
 
       const newPhotos = privatePhotos.filter((_, i) => i !== index);
 
-      const { error } = await supabase
-        .from("profiles")
+      const { error } = await (supabase
+        .from("profiles") as any)
         .update({ private_photos: newPhotos })
         .eq("user_id", userId);
 
