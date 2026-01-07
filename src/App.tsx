@@ -6,6 +6,8 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { NotificationsProvider } from "@/components/NotificationsProvider";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import CookieConsent from "@/components/CookieConsent";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { useLocation } from "@/hooks/useLocation";
 import Splash from "./pages/Splash";
 import Welcome from "./pages/Welcome";
 import Auth from "./pages/Auth";
@@ -26,12 +28,11 @@ import CommunityGuidelines from "./pages/CommunityGuidelines";
 import Install from "./pages/Install";
 
 import NotFound from "./pages/NotFound";
-import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 const queryClient = new QueryClient();
 
 // Helper component to run global logic
-import { useLocation } from "@/hooks/useLocation";
+
 const GlobalLogic = () => {
   useLocation();
   return null;
