@@ -70,6 +70,14 @@ const Prime = () => {
 
   const pricingPlans = [
     {
+      id: "trial",
+      title: "Prueba 3 días",
+      price: "1.99€",
+      period: "/total",
+      savings: "Oferta única",
+      popular: false,
+    },
+    {
       id: "weekly",
       title: "Semanal",
       price: "4.99€",
@@ -178,8 +186,8 @@ const Prime = () => {
               <Card
                 key={plan.id}
                 className={`relative overflow-hidden border-2 transition-all duration-300 cursor-pointer hover:scale-[1.02] ${plan.popular
-                    ? "border-prime bg-prime/5 shadow-[0_0_20px_hsl(var(--prime)/0.15)]"
-                    : "border-border bg-card/50 hover:border-prime/50"
+                  ? "border-prime bg-prime/5 shadow-[0_0_20px_hsl(var(--prime)/0.15)]"
+                  : "border-border bg-card/50 hover:border-prime/50"
                   }`}
                 onClick={() => handleSubscribe(plan.id)}
               >

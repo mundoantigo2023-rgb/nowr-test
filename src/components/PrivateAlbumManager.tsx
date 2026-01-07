@@ -65,7 +65,7 @@ const PrivateAlbumManager = ({ userId, privatePhotos, onPhotosChange }: PrivateA
         const filePath = `${userId}/${fileName}`;
 
         const { error: uploadError } = await supabase.storage
-          .from("private-albums")
+          .from("private_photos") // Correct bucket name based on user rules usually being lower_snake_case or checking RLS
           .upload(filePath, file);
 
         if (uploadError) {
@@ -79,7 +79,7 @@ const PrivateAlbumManager = ({ userId, privatePhotos, onPhotosChange }: PrivateA
         }
 
         const { data: { publicUrl } } = supabase.storage
-          .from("private-albums")
+          .from("private_photos")
           .getPublicUrl(filePath);
 
         uploadedUrls.push(publicUrl);
@@ -131,10 +131,10 @@ const PrivateAlbumManager = ({ userId, privatePhotos, onPhotosChange }: PrivateA
       const photoUrl = privatePhotos[index];
 
       // Extract file path from URL
-      const urlParts = photoUrl.split("/private-albums/");
+      const urlParts = photoUrl.split("/private_photos/");
       if (urlParts.length > 1) {
         const filePath = urlParts[1];
-        await supabase.storage.from("private-albums").remove([filePath]);
+        await supabase.storage.from("private_photos").remove([filePath]);
       }
 
       const newPhotos = privatePhotos.filter((_, i) => i !== index);

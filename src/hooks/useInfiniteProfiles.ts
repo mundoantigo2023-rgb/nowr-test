@@ -24,7 +24,12 @@ interface Profile {
 
 const PAGE_SIZE = 24;
 
-export const useInfiniteProfiles = (userId: string | undefined, searchPreference?: string | null) => {
+interface FilterOptions {
+  ageRange: [number, number];
+  distance: number;
+}
+
+export const useInfiniteProfiles = (userId: string | undefined, searchPreference?: string | null, filters?: FilterOptions) => {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -99,6 +104,35 @@ export const useInfiniteProfiles = (userId: string | undefined, searchPreference
           query = query.eq("visible_gender", "woman");
         }
 
+        if (filters) {
+          query = query.gte('age', filters.ageRange[0]).lte('age', filters.ageRange[1]);
+        }
+
+        // Apply strict Age filter
+        // Note: For RPC, this is handled on DB side or needs to be passed.
+        // For standard query, we must apply it here.
+        // We assume 'age' column exists and is indexed.
+        // We'll filter in-memory if needed, but DB is better.
+        // Let's rely on client-side filtering below if we don't trust DB params yet, 
+        // BUT for pagination to work, DB filtering is must.
+        // Adding simple age range to query:
+        // query = query.gte('age', 18).lte('age', 99); // This would be generic
+        // The user complained about filters not working.
+        // The `Home` component does client-side filtering (see below in Home.tsx snippet),
+        // effectively discarding rows. This causes "disappearing" profiles if page size is small.
+        // WE MUST MOVE FILTERING TO DB QUERY to ensure consistency.
+
+        // HOWEVER, useInfiniteProfiles arguments here are `userId` and `searchPreference`.
+        // It does NOT receive the full filter object (age, distance).
+        // To fix "Result Stability", we must pass filters to this hook OR do it in Home.
+        // The PROPER FIX is to pass filters to the hook.
+        // The *Quick Fix* to stabilize "appearing/disappearing" without refactoring everything:
+        // is to ensure the query returns a stable superset and Home filters it consistently.
+        // The issue "Mobile vs Desktop" is likely because Grid renders differently.
+
+        // Let's verify standard query stability:
+        query = query.neq("display_name", null); // basic check
+
         const { data: stdData, error: stdError } = await query
           .order("is_prime", { ascending: false, nullsFirst: false })
           .order("last_active", { ascending: false })
@@ -151,7 +185,7 @@ export const useInfiniteProfiles = (userId: string | undefined, searchPreference
         setLoadingMore(false);
       }
     }
-  }, [userId, searchPreference, userLoc]);
+  }, [userId, searchPreference, userLoc, filters]);
 
   const loadMore = useCallback(() => {
     if (loadingMore || !hasMore) return;

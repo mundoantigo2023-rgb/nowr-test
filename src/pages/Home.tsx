@@ -33,7 +33,7 @@ const Home = () => {
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [isPrime, setIsPrime] = useState(false);
   const [searchPreference, setSearchPreference] = useState<string | null>(null);
-  const { profiles, loading, loadingMore, hasMore, loadMore, refresh } = useInfiniteProfiles(user?.id, searchPreference);
+  const { profiles, loading, loadingMore, hasMore, loadMore, refresh } = useInfiniteProfiles(user?.id, searchPreference, filters);
   const livePresenceCount = useLivePresence(user?.id);
   const { track, trackPageView } = useAnalytics();
   const { activityData, getCopy } = useCityActivity(userCity);
